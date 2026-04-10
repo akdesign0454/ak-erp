@@ -7,6 +7,30 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
+
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+table {
+  width: 100%;
+  min-width: 700px;
+  border-collapse: collapse;
+}
+
+@media (max-width: 768px) {
+  body {
+    padding: 12px;
+  }
+
+  .row,
+  .row3 {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 body {
   font-family: sans-serif;
   margin: 16px;
@@ -55,28 +79,6 @@ tr:hover {
 .small {
   font-size: 13px;
   color: #666;
-}
-.table-wrap {
-  width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-table {
-  width: 100%;
-  min-width: 700px;
-  border-collapse: collapse;
-}
-
-@media (max-width: 768px) {
-  body {
-    padding: 12px;
-  }
-
-  .row,
-  .row3 {
-    grid-template-columns: 1fr !important;
-  }
 }
 </style>
 </head>
