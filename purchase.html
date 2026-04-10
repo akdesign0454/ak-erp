@@ -41,9 +41,9 @@
     grid-template-columns: 1fr 1fr;
     gap: 8px;
   }
-  .btn-group-3 {
+  .btn-group-4 {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 8px;
   }
   table {
@@ -108,20 +108,9 @@
 
 <h2>발주서 작성 / 조회 / 수정 / 재출력</h2>
 
-<div class="card no-print">
+<div class="card">
   <h3 class="section-title">현재 상태</h3>
   <div class="status-box" id="modeInfo">신규 작성 모드</div>
-
-  <div class="btn-group-3">
-    <button onclick="newOrder()">신규 발주</button>
-    <button onclick="saveOrder()">신규 저장</button>
-    <button onclick="updateOrder()">수정 저장</button>
-  </div>
-
-  <div class="btn-group-2">
-    <button onclick="printPdf()">PDF 저장</button>
-    <button onclick="loadRecentOrders()">최근 발주 보기</button>
-  </div>
 </div>
 
 <div class="card">
@@ -184,6 +173,16 @@
     </thead>
     <tbody id="orderItemBody"></tbody>
   </table>
+
+  <div class="no-print" style="margin-top:12px;">
+    <div class="btn-group-4">
+      <button onclick="newOrder()">신규 저장용 새 발주</button>
+      <button onclick="saveOrder()">신규 저장</button>
+      <button onclick="updateOrder()">수정 저장</button>
+      <button onclick="printPdf()">PDF 저장</button>
+    </div>
+    <button onclick="loadRecentOrders()">최근 발주</button>
+  </div>
 </div>
 
 <div class="card no-print">
@@ -395,7 +394,7 @@ function getHeaderFormData() {
   const vendorSelect = document.getElementById("vendor_select");
   return {
     order_no: document.getElementById("order_no").value.trim(),
-    vendor_id: vendorSelect.value,
+    vendor_id: vendorSelect.value || null,
     vendor_name: vendorSelect.selectedOptions[0]?.text || "",
     site_name: document.getElementById("site_name").value.trim(),
     site_address: document.getElementById("site_address").value.trim(),
@@ -490,9 +489,7 @@ async function updateOrder() {
   }
 
   const confirmResult = confirm("정말 수정 저장하시겠습니까?\n기존 발주 상세내역은 현재 화면 내용으로 교체됩니다.");
-  if (!confirmResult) {
-    return;
-  }
+  if (!confirmResult) return;
 
   const formData = getHeaderFormData();
   if (!validateOrderData(formData)) return;
@@ -573,17 +570,9 @@ async function searchOrders() {
     .order("created_at", { ascending: false })
     .limit(100);
 
-  if (searchOrderNo) {
-    query = query.ilike("order_no", `%${searchOrderNo}%`);
-  }
-
-  if (searchVendorName) {
-    query = query.ilike("vendor_name", `%${searchVendorName}%`);
-  }
-
-  if (searchSiteName) {
-    query = query.ilike("site_name", `%${searchSiteName}%`);
-  }
+  if (searchOrderNo) query = query.ilike("order_no", `%${searchOrderNo}%`);
+  if (searchVendorName) query = query.ilike("vendor_name", `%${searchVendorName}%`);
+  if (searchSiteName) query = query.ilike("site_name", `%${searchSiteName}%`);
 
   const { data, error } = await query;
 
@@ -673,7 +662,6 @@ async function init() {
   await loadVendors();
   newOrder();
   await loadRecentOrders();
-
   document.getElementById("vendor_select").addEventListener("change", loadVendorMaterials);
   setModeInfo();
 }
