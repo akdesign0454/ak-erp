@@ -7,135 +7,175 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
+  * {
+    box-sizing: border-box;
+  }
 
-body {
-  font-family: sans-serif;
-  margin: 16px;
-  background: #f8f8f8;
-}
-input, button, textarea {
-  width: 100%;
-  padding: 10px;
-  margin: 6px 0;
-  font-size: 16px;
-  box-sizing: border-box;
-}
-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: #fff;
-}
-td, th {
-  border: 1px solid #ddd;
-  padding: 8px;
-  font-size: 14px;
-  vertical-align: middle;
-}
-tr:hover {
-  background: #f1f7ff;
-  cursor: pointer;
-}
-.selected {
-  background: #dbeafe !important;
-}
-.card {
-  background: #fff;
-  padding: 12px;
-  border-radius: 10px;
-  margin-bottom: 12px;
-  border: 1px solid #ddd;
-}
-.done {
-  color: #0a7a0a;
-  font-weight: bold;
-}
-.warn {
-  color: #b26a00;
-  font-weight: bold;
-}
-.small {
-  font-size: 13px;
-  color: #666;
-}
-
-.table-wrap {
-  width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-table {
-  width: 100%;
-  min-width: 700px;
-  border-collapse: collapse;
-}
-
-@media (max-width: 768px) {
   body {
+    font-family: sans-serif;
+    margin: 0;
+    padding: 16px;
+    background: #f8f8f8;
+  }
+
+  .container {
+    max-width: 1080px;
+    margin: 0 auto;
+  }
+
+  input, button, textarea {
+    width: 100%;
+    padding: 10px;
+    margin: 6px 0;
+    font-size: 16px;
+    box-sizing: border-box;
+  }
+
+  .table-input {
+    min-width: 90px;
+    width: 100%;
+    margin: 0;
+    padding: 8px;
+    font-size: 14px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+  }
+
+  td, th {
+    border: 1px solid #ddd;
+    padding: 8px;
+    font-size: 14px;
+    vertical-align: middle;
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  tr:hover {
+    background: #f1f7ff;
+    cursor: pointer;
+  }
+
+  .selected {
+    background: #dbeafe !important;
+  }
+
+  .card {
+    background: #fff;
     padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    border: 1px solid #ddd;
   }
 
-  .row,
-  .row3 {
-    grid-template-columns: 1fr !important;
+  .done {
+    color: #0a7a0a;
+    font-weight: bold;
   }
-}
 
+  .warn {
+    color: #b26a00;
+    font-weight: bold;
+  }
+
+  .small {
+    font-size: 13px;
+    color: #666;
+  }
+
+  .table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .order-table {
+    min-width: 620px;
+  }
+
+  .item-table {
+    min-width: 860px;
+  }
+
+  @media (max-width: 768px) {
+    body {
+      padding: 12px;
+    }
+
+    .container {
+      max-width: 100%;
+    }
+
+    .card {
+      padding: 10px;
+    }
+  }
 </style>
 </head>
 
 <body>
 
-<h2>입고 처리</h2>
+<div class="container">
 
-<div class="card">
-  <div class="small">최근 발주 10개를 보고 선택한 뒤 조회합니다.</div>
-  <button onclick="loadRecent()">최근 발주 보기</button>
-</div>
+  <h2>입고 처리</h2>
 
-<div class="card">
-  <table>
-    <thead>
-      <tr>
-        <th>발주번호</th>
-        <th>업체명</th>
-        <th>발주일</th>
-      </tr>
-    </thead>
-    <tbody id="orderBody"></tbody>
-  </table>
-  <button onclick="loadSelected()">선택 발주 조회</button>
-</div>
+  <div class="card">
+    <div class="small">최근 발주 10개를 보고 선택한 뒤 조회합니다.</div>
+    <button onclick="loadRecent()">최근 발주 보기</button>
+  </div>
 
-<div class="card">
-  <h3>선택 발주 정보</h3>
-  <input id="selected_order_no" readonly placeholder="발주번호">
-  <input id="selected_vendor_name" readonly placeholder="업체명">
-  <input id="selected_order_date" readonly placeholder="발주일">
-  <textarea id="receipt_memo" placeholder="이번 입고 메모"></textarea>
-</div>
+  <div class="card">
+    <div class="table-wrap">
+      <table class="order-table">
+        <thead>
+          <tr>
+            <th>발주번호</th>
+            <th>업체명</th>
+            <th>발주일</th>
+          </tr>
+        </thead>
+        <tbody id="orderBody"></tbody>
+      </table>
+    </div>
+    <button onclick="loadSelected()">선택 발주 조회</button>
+  </div>
 
-<div class="card">
-  <h3>입고 항목</h3>
-  <div class="small">잔량보다 많이 입력하면 막습니다. 완료된 항목은 잠깁니다.</div>
-  <table>
-    <thead>
-      <tr>
-        <th>자재명</th>
-        <th>발주수량</th>
-        <th>누적입고</th>
-        <th>잔량</th>
-        <th>현재고</th>
-        <th>이번 입고수량</th>
-        <th>상태</th>
-      </tr>
-    </thead>
-    <tbody id="itemBody"></tbody>
-  </table>
-</div>
+  <div class="card">
+    <h3>선택 발주 정보</h3>
+    <input id="selected_order_no" readonly placeholder="발주번호">
+    <input id="selected_vendor_name" readonly placeholder="업체명">
+    <input id="selected_order_date" readonly placeholder="발주일">
+    <textarea id="receipt_memo" placeholder="이번 입고 메모"></textarea>
+  </div>
 
-<div class="card">
-  <button onclick="process()">입고 처리</button>
+  <div class="card">
+    <h3>입고 항목</h3>
+    <div class="small">잔량보다 많이 입력하면 막습니다. 완료된 항목은 잠깁니다.</div>
+    <div class="table-wrap">
+      <table class="item-table">
+        <thead>
+          <tr>
+            <th>자재명</th>
+            <th>발주수량</th>
+            <th>누적입고</th>
+            <th>잔량</th>
+            <th>현재고</th>
+            <th>이번 입고수량</th>
+            <th>상태</th>
+          </tr>
+        </thead>
+        <tbody id="itemBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <button onclick="process()">입고 처리</button>
+  </div>
+
 </div>
 
 <script>
@@ -148,7 +188,8 @@ let selectedHeader = null;
 let items = [];
 
 async function loadRecent() {
-  const { data, error } = await db.from("purchase_lists")
+  const { data, error } = await db
+    .from("purchase_lists")
     .select("*")
     .order("created_at", { ascending: false })
     .limit(10);
@@ -191,7 +232,8 @@ async function loadSelected() {
   document.getElementById("selected_vendor_name").value = selectedHeader?.vendor_name ?? "";
   document.getElementById("selected_order_date").value = selectedHeader?.order_date ?? "";
 
-  const { data, error } = await db.from("purchase_list_items")
+  const { data, error } = await db
+    .from("purchase_list_items")
     .select("*")
     .eq("purchase_list_id", selectedId)
     .order("created_at", { ascending: true });
@@ -207,7 +249,8 @@ async function loadSelected() {
     let currentStock = 0;
 
     if (row.material_id) {
-      const { data: matData } = await db.from("materials")
+      const { data: matData } = await db
+        .from("materials")
         .select("stock_qty")
         .eq("id", row.material_id)
         .maybeSingle();
@@ -252,12 +295,14 @@ function render() {
         <td>${r.remain_qty}</td>
         <td>${r.current_stock}</td>
         <td>
-          <input type="number"
-                 min="0"
-                 max="${r.remain_qty}"
-                 value="0"
-                 ${r.receipt_done ? "disabled" : ""}
-                 onchange="setReceiveQty(${i}, this.value)">
+          <input
+            class="table-input"
+            type="number"
+            min="0"
+            max="${r.remain_qty}"
+            value="0"
+            ${r.receipt_done ? "disabled" : ""}
+            onchange="setReceiveQty(${i}, this.value)">
         </td>
         <td class="${statusClass}">${statusText}</td>
       </tr>
@@ -308,7 +353,8 @@ async function process() {
       return;
     }
 
-    const { data: mat, error: matError } = await db.from("materials")
+    const { data: mat, error: matError } = await db
+      .from("materials")
       .select("*")
       .eq("id", r.material_id)
       .single();
@@ -322,7 +368,8 @@ async function process() {
     const addQty = Number(r.receive_qty || 0);
     const newQty = beforeQty + addQty;
 
-    const { error: updateMatError } = await db.from("materials")
+    const { error: updateMatError } = await db
+      .from("materials")
       .update({
         stock_qty: newQty,
         updated_at: new Date().toISOString()
@@ -337,7 +384,8 @@ async function process() {
     const newReceiptQty = Number(r.receipt_qty || 0) + addQty;
     const isDone = newReceiptQty >= Number(r.order_qty || 0);
 
-    const { error: updateItemError } = await db.from("purchase_list_items")
+    const { error: updateItemError } = await db
+      .from("purchase_list_items")
       .update({
         receipt_qty: newReceiptQty,
         receipt_done: isDone,
@@ -350,14 +398,16 @@ async function process() {
       return;
     }
 
-    const { error: logError } = await db.from("stock_logs").insert([{
-      material_id: r.material_id,
-      change_type: "IN",
-      qty: addQty,
-      before_qty: beforeQty,
-      after_qty: newQty,
-      memo: `[입고] ${selectedHeader?.order_no ?? ""} / ${memo}`
-    }]);
+    const { error: logError } = await db
+      .from("stock_logs")
+      .insert([{
+        material_id: r.material_id,
+        change_type: "IN",
+        qty: addQty,
+        before_qty: beforeQty,
+        after_qty: newQty,
+        memo: `[입고] ${selectedHeader?.order_no ?? ""} / ${memo}`
+      }]);
 
     if (logError) {
       alert("입고이력 저장 실패: " + logError.message);
