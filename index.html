@@ -1,24 +1,2042 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AK ERP</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AK ERP 통합본</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-*{box-sizing:border-box}
-body{font-family:sans-serif;margin:0;padding:16px;background:#f5f7fb}
-.wrap{max-width:720px;margin:0 auto}
-h1{font-size:24px;margin-bottom:16px}
-a{display:block;background:#2563eb;color:#fff;padding:14px;margin:8px 0;border-radius:10px;text-align:center;text-decoration:none}
+  * { box-sizing: border-box; }
+  body {
+    font-family: sans-serif;
+    margin: 0;
+    padding: 0;
+    background: #f5f7fb;
+    color: #222;
+  }
+  .app {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 16px;
+  }
+  .card {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+  h1, h2, h3 {
+    margin: 0 0 10px 0;
+  }
+  input, select, textarea, button {
+    width: 100%;
+    padding: 10px;
+    margin: 6px 0;
+    font-size: 16px;
+    box-sizing: border-box;
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .row3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+  .btn-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .small {
+    font-size: 13px;
+    color: #666;
+  }
+  .menu-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .menu-btn {
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+  }
+  .sub-btn {
+    background: #111827;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+  }
+  .danger-btn {
+    background: #b91c1c;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+  }
+  .muted-btn {
+    background: #6b7280;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+  }
+  .table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+  }
+  th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+    vertical-align: middle;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+  tr:hover {
+    background: #f1f7ff;
+    cursor: pointer;
+  }
+  .selected {
+    background: #dbeafe !important;
+  }
+  .hidden {
+    display: none !important;
+  }
+  .screen {
+    display: none;
+  }
+  .screen.active {
+    display: block;
+  }
+  .status-box {
+    background: #f3f4f6;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 8px;
+    font-size: 14px;
+  }
+  .party-box {
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 10px;
+    margin-top: 12px;
+    line-height: 1.8;
+  }
+  .party-line {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    font-size: 15px;
+  }
+  .label {
+    font-weight: bold;
+    margin-right: 6px;
+  }
+  .print-info-box {
+    margin-top: 12px;
+    line-height: 1.8;
+  }
+  .print-info-line {
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+  .print-address-line {
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .print-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 6px 0;
+  }
+  .done {
+    color: #0a7a0a;
+    font-weight: bold;
+  }
+  .warn {
+    color: #b26a00;
+    font-weight: bold;
+  }
+  .table-input {
+    min-width: 90px;
+    width: 100%;
+    margin: 0;
+    padding: 8px;
+    font-size: 14px;
+  }
+  .login-wrap {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .login-card {
+    width: 100%;
+    max-width: 420px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 14px;
+    padding: 18px;
+  }
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .topbar-title {
+    font-size: 22px;
+    font-weight: bold;
+  }
+
+  @media (max-width: 768px) {
+    .app { padding: 12px; }
+    .row, .row3, .btn-row, .menu-grid, .print-info-grid {
+      grid-template-columns: 1fr !important;
+    }
+    .party-line {
+      gap: 10px;
+    }
+  }
+
+  @media print {
+    #loginScreen,
+    #mainMenu,
+    .no-print {
+      display: none !important;
+    }
+    body {
+      background: #fff;
+    }
+    .app {
+      max-width: none;
+      padding: 0;
+    }
+    .card {
+      border: none;
+      box-shadow: none;
+      margin-bottom: 12px;
+      padding: 0;
+    }
+    input, select, textarea {
+      border: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      background: transparent !important;
+      appearance: none;
+      -webkit-appearance: none;
+      outline: none;
+    }
+    button {
+      display: none !important;
+    }
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
-<h1>AK 디자인 자재관리 ERP</h1>
 
-<a href="balju_app.html">업체/자재 관리</a>
-<a href="purchase.html">발주서 작성</a>
-<a href="receipt.html">입고 처리</a>
+<!-- 로그인 화면 -->
+<div id="loginScreen" class="login-wrap">
+  <div class="login-card">
+    <h2>AK ERP 로그인</h2>
+    <div class="small">아이디와 비밀번호를 입력해야 진입할 수 있습니다.</div>
+    <input id="loginId" placeholder="아이디">
+    <input id="loginPw" type="password" placeholder="비밀번호">
+    <button class="menu-btn" onclick="handleLogin()">로그인</button>
+    <div class="small">이 방식은 1차 차단용입니다. 진짜 보안은 추후 Supabase Auth를 붙여야 합니다.</div>
+  </div>
 </div>
+
+<!-- 메인 앱 -->
+<div id="appRoot" class="hidden">
+  <div class="app">
+    <div class="topbar">
+      <div class="topbar-title">AK ERP 통합본</div>
+      <button class="muted-btn no-print" style="width:auto;padding:10px 14px;" onclick="logout()">로그아웃</button>
+    </div>
+
+    <div id="mainMenu" class="card no-print">
+      <h3>메뉴</h3>
+      <div class="menu-grid">
+        <button class="menu-btn" onclick="showScreen('screenPurchase')">발주서 작성</button>
+        <button class="menu-btn" onclick="showScreen('screenMaterial')">업체 / 자재 관리</button>
+        <button class="menu-btn" onclick="showScreen('screenReceipt')">입고 처리</button>
+        <button class="danger-btn" onclick="showScreen('screenVendorDelete')">업체 삭제</button>
+        <button class="danger-btn" onclick="showScreen('screenRequesterDelete')">발주처 담당자 삭제</button>
+      </div>
+    </div>
+
+    <!-- 발주서 -->
+    <section id="screenPurchase" class="screen active">
+      <div class="card no-print">
+        <h3>현재 상태</h3>
+        <div class="status-box" id="purchase_modeInfo">신규 작성 모드</div>
+      </div>
+
+      <div class="card">
+        <h3>발주 기본정보</h3>
+
+        <input id="purchase_order_no" readonly placeholder="발주번호 자동생성">
+
+        <select id="purchase_vendor_select"></select>
+
+        <div class="no-print">
+          <div class="row">
+            <input id="purchase_requester_company" readonly value="AK디자인" placeholder="발주처">
+            <select id="purchase_requester_name_select"></select>
+          </div>
+
+          <div class="row">
+            <input id="purchase_requester_name" placeholder="발주처 담당자명">
+            <input id="purchase_requester_phone" placeholder="발주처 전화번호">
+          </div>
+        </div>
+
+        <div class="row no-print">
+          <input id="purchase_site_name" placeholder="현장명">
+          <input id="purchase_site_address" placeholder="현장주소">
+        </div>
+
+        <div class="row no-print">
+          <div>
+            <label>발주일</label>
+            <input id="purchase_order_date" type="date">
+          </div>
+          <div>
+            <label>자재도착일</label>
+            <input id="purchase_arrival_date" type="date">
+          </div>
+        </div>
+
+        <textarea id="purchase_memo" class="no-print" placeholder="비고"></textarea>
+
+        <div class="party-box">
+          <div class="party-line">
+            <div><span class="label">수신처 :</span><span id="purchase_vendorNameText">업체 미선택</span></div>
+            <div><span class="label">담당자 :</span><span id="purchase_vendorContactNameText">-</span></div>
+            <div><span class="label">전화번호 :</span><span id="purchase_vendorContactPhoneText">-</span></div>
+          </div>
+          <div class="party-line">
+            <div><span class="label">발주처 :</span><span id="purchase_requesterCompanyText">AK디자인</span></div>
+            <div><span class="label">담당자 :</span><span id="purchase_requesterNameText">-</span></div>
+            <div><span class="label">전화번호 :</span><span id="purchase_requesterPhoneText">-</span></div>
+          </div>
+        </div>
+
+        <div class="print-info-box">
+          <div class="print-info-line print-address-line" id="purchase_siteAddressLineWrap">
+            <span class="label">현장주소 :</span>
+            <span id="purchase_siteAddressText">-</span>
+          </div>
+
+          <div class="print-info-grid">
+            <div>
+              <span class="label">발주일 :</span>
+              <span id="purchase_orderDateText">-</span>
+            </div>
+            <div>
+              <span class="label">자재도착일 :</span>
+              <span id="purchase_arrivalDateText">-</span>
+            </div>
+          </div>
+
+          <div class="print-info-line">
+            <span class="label">비고 :</span>
+            <span id="purchase_memoText">-</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card no-print">
+        <h3>업체 자재 목록</h3>
+        <div class="small">업체 선택 시 해당 업체 자재만 표시됩니다. 자재 행을 누르면 발주목록에 추가됩니다.</div>
+
+        <div class="table-wrap">
+          <table style="min-width:520px;">
+            <thead>
+              <tr>
+                <th>자재명</th>
+                <th>단위</th>
+                <th>현재고</th>
+              </tr>
+            </thead>
+            <tbody id="purchase_materialBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>발주 항목</h3>
+
+        <div class="table-wrap">
+          <table style="min-width:520px;">
+            <thead>
+              <tr>
+                <th>자재명</th>
+                <th>단위</th>
+                <th>수량</th>
+                <th class="no-print">삭제</th>
+              </tr>
+            </thead>
+            <tbody id="purchase_orderItemBody"></tbody>
+          </table>
+        </div>
+
+        <div class="no-print" style="margin-top:12px;">
+          <div class="btn-row">
+            <button class="sub-btn" onclick="purchase_newOrder()">신규 저장용 새 발주</button>
+            <button class="menu-btn" onclick="purchase_saveOrder()">신규 저장</button>
+            <button class="sub-btn" onclick="purchase_updateOrder()">수정 저장</button>
+            <button class="muted-btn" onclick="window.print()">PDF 저장</button>
+          </div>
+          <button class="sub-btn" onclick="purchase_loadRecentOrders()">최근 발주</button>
+        </div>
+      </div>
+
+      <div class="card no-print">
+        <h3>발주 조회</h3>
+
+        <div class="row3">
+          <input id="purchase_search_order_no" placeholder="발주번호 검색">
+          <input id="purchase_search_vendor_name" placeholder="업체명 검색">
+          <input id="purchase_search_site_name" placeholder="현장명 검색">
+        </div>
+
+        <div class="btn-row">
+          <button class="menu-btn" onclick="purchase_searchOrders()">조회</button>
+          <button class="muted-btn" onclick="purchase_clearSearchInputs()">검색칸 지우기</button>
+        </div>
+
+        <div class="table-wrap">
+          <table style="min-width:700px;">
+            <thead>
+              <tr>
+                <th>발주번호</th>
+                <th>업체명</th>
+                <th>현장명</th>
+                <th>발주일</th>
+                <th>도착일</th>
+              </tr>
+            </thead>
+            <tbody id="purchase_orderSearchBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 업체/자재 관리 -->
+    <section id="screenMaterial" class="screen">
+      <div class="card">
+        <h3>발주처 담당자 관리 (AK디자인)</h3>
+        <div class="small">발주처 담당자를 저장해두면 발주서에서 선택 시 전화번호가 자동으로 들어갑니다.</div>
+
+        <select id="material_requester_manage_select" onchange="material_loadRequesterToForm()">
+          <option value="">담당자 선택</option>
+        </select>
+
+        <input id="material_requester_contact_name" placeholder="발주처 담당자명">
+        <input id="material_requester_contact_phone" placeholder="발주처 전화번호">
+
+        <div class="btn-row">
+          <button class="menu-btn" onclick="material_saveRequesterContact()">발주처 담당자 신규 저장</button>
+          <button class="sub-btn" onclick="material_updateRequesterContact()">발주처 담당자 수정 저장</button>
+        </div>
+
+        <button class="muted-btn" onclick="material_resetRequesterForm()">발주처 담당자 입력 초기화</button>
+      </div>
+
+      <div class="card">
+        <h3>업체 관리</h3>
+        <div class="small">기존 업체를 선택하면 수정할 수 있습니다. 선택 없이 수정 저장을 누르면 업체명으로 기존 업체를 찾습니다.</div>
+
+        <select id="material_vendor_manage_select" onchange="material_loadVendorToForm()">
+          <option value="">업체 선택</option>
+        </select>
+
+        <input id="material_vendor_name" placeholder="업체명">
+        <input id="material_vendor_contact_name" placeholder="수신처 담당자명">
+        <input id="material_vendor_contact_phone" placeholder="수신처 전화번호">
+
+        <div class="btn-row">
+          <button class="menu-btn" onclick="material_saveVendor()">업체 신규 저장</button>
+          <button class="sub-btn" onclick="material_updateVendor()">업체 수정 저장</button>
+        </div>
+
+        <button class="muted-btn" onclick="material_resetVendorForm()">업체 입력 초기화</button>
+      </div>
+
+      <div class="card">
+        <h3>자재 관리</h3>
+        <select id="material_vendor_select">
+          <option value="">업체 선택</option>
+        </select>
+
+        <input id="material_item_code" readonly placeholder="자동코드">
+        <input id="material_item_name" placeholder="자재명">
+        <input id="material_spec" placeholder="규격">
+        <input id="material_unit" placeholder="단위">
+        <input id="material_stock_qty" readonly placeholder="현재고">
+        <textarea id="material_note" placeholder="비고"></textarea>
+
+        <div class="btn-row">
+          <button class="menu-btn" onclick="material_saveMaterial()">자재 저장</button>
+          <button class="sub-btn" onclick="material_updateMaterial()">자재 수정 저장</button>
+        </div>
+
+        <button class="muted-btn" onclick="material_resetMaterialForm()">자재 신규 입력</button>
+      </div>
+
+      <div class="card">
+        <h3>재고 변경</h3>
+
+        <select id="material_type">
+          <option value="IN">입고</option>
+          <option value="OUT">사용</option>
+          <option value="ADJUST">조정</option>
+        </select>
+
+        <input id="material_qty" type="number" placeholder="수량">
+        <button class="sub-btn" onclick="material_changeStock()">재고 반영</button>
+      </div>
+
+      <div class="card">
+        <h3>자재 목록</h3>
+        <div class="table-wrap">
+          <table style="min-width:760px;">
+            <thead>
+              <tr>
+                <th>업체</th>
+                <th>코드</th>
+                <th>자재명</th>
+                <th>규격</th>
+                <th>단위</th>
+                <th>재고</th>
+              </tr>
+            </thead>
+            <tbody id="material_body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 입고 처리 -->
+    <section id="screenReceipt" class="screen">
+      <div class="card">
+        <h3>입고 처리</h3>
+        <div class="small">최근 발주 10개를 보고 선택한 뒤 조회합니다.</div>
+        <button class="menu-btn" onclick="receipt_loadRecent()">최근 발주 보기</button>
+      </div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table style="min-width:620px;">
+            <thead>
+              <tr>
+                <th>발주번호</th>
+                <th>업체명</th>
+                <th>발주일</th>
+              </tr>
+            </thead>
+            <tbody id="receipt_orderBody"></tbody>
+          </table>
+        </div>
+        <button class="sub-btn" onclick="receipt_loadSelected()">선택 발주 조회</button>
+      </div>
+
+      <div class="card">
+        <h3>선택 발주 정보</h3>
+        <input id="receipt_selected_order_no" readonly placeholder="발주번호">
+        <input id="receipt_selected_vendor_name" readonly placeholder="업체명">
+        <input id="receipt_selected_order_date" readonly placeholder="발주일">
+        <textarea id="receipt_memo" placeholder="이번 입고 메모"></textarea>
+      </div>
+
+      <div class="card">
+        <h3>입고 항목</h3>
+        <div class="small">잔량보다 많이 입력하면 막습니다. 완료된 항목은 잠깁니다.</div>
+        <div class="table-wrap">
+          <table style="min-width:860px;">
+            <thead>
+              <tr>
+                <th>자재명</th>
+                <th>발주수량</th>
+                <th>누적입고</th>
+                <th>잔량</th>
+                <th>현재고</th>
+                <th>이번 입고수량</th>
+                <th>상태</th>
+              </tr>
+            </thead>
+            <tbody id="receipt_itemBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <button class="menu-btn" onclick="receipt_process()">입고 처리</button>
+      </div>
+    </section>
+
+    <!-- 업체 삭제 -->
+    <section id="screenVendorDelete" class="screen">
+      <div class="card">
+        <h3>업체 삭제</h3>
+        <div class="small">삭제할 업체를 선택한 뒤 삭제 버튼을 누르십시오. 연결된 자재가 있으면 삭제가 막힐 수 있습니다.</div>
+        <input id="vendorDelete_search_vendor" placeholder="업체명 검색">
+        <button class="sub-btn" onclick="vendorDelete_loadVendors()">업체 불러오기</button>
+      </div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table style="min-width:620px;">
+            <thead>
+              <tr>
+                <th>업체명</th>
+                <th>수신처 담당자</th>
+                <th>수신처 전화번호</th>
+              </tr>
+            </thead>
+            <tbody id="vendorDelete_vendorBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <input id="vendorDelete_selected_vendor_name" readonly placeholder="선택된 업체">
+        <button class="danger-btn" onclick="vendorDelete_deleteVendor()">선택 업체 삭제</button>
+      </div>
+    </section>
+
+    <!-- 발주처 담당자 삭제 -->
+    <section id="screenRequesterDelete" class="screen">
+      <div class="card">
+        <h3>발주처 담당자 삭제</h3>
+        <div class="small">AK디자인 담당자를 선택한 뒤 삭제하십시오.</div>
+        <input id="requesterDelete_search_contact" placeholder="담당자명 검색">
+        <button class="sub-btn" onclick="requesterDelete_loadContacts()">담당자 불러오기</button>
+      </div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table style="min-width:620px;">
+            <thead>
+              <tr>
+                <th>담당자명</th>
+                <th>전화번호</th>
+                <th>회사명</th>
+              </tr>
+            </thead>
+            <tbody id="requesterDelete_body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <input id="requesterDelete_selected_name" readonly placeholder="선택된 담당자">
+        <button class="danger-btn" onclick="requesterDelete_delete()">선택 담당자 삭제</button>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+/* =========================
+   1차 로그인 게이트
+========================= */
+const APP_LOGIN_ID = "admin";
+const APP_LOGIN_PW = "1234";
+
+function handleLogin() {
+  const id = document.getElementById("loginId").value.trim();
+  const pw = document.getElementById("loginPw").value.trim();
+
+  if (id === APP_LOGIN_ID && pw === APP_LOGIN_PW) {
+    sessionStorage.setItem("ak_erp_login", "ok");
+    enterApp();
+  } else {
+    alert("아이디 또는 비밀번호가 틀렸습니다.");
+  }
+}
+
+function enterApp() {
+  document.getElementById("loginScreen").classList.add("hidden");
+  document.getElementById("appRoot").classList.remove("hidden");
+}
+
+function logout() {
+  sessionStorage.removeItem("ak_erp_login");
+  location.reload();
+}
+
+/* =========================
+   Supabase
+========================= */
+const url = "https://gmqjbkqttkkotvvjnsiz.supabase.co";
+const key = "sb_publishable_NGNO5UWtbkgCWQQ6jwTe6Q_4evcuVD9";
+const db = supabase.createClient(url, key);
+
+/* =========================
+   화면 전환
+========================= */
+function showScreen(screenId) {
+  document.querySelectorAll(".screen").forEach(el => el.classList.remove("active"));
+  document.getElementById(screenId).classList.add("active");
+}
+
+/* =========================
+   공통 유틸
+========================= */
+function todayString() {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function orderNoString() {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mi = String(d.getMinutes()).padStart(2, "0");
+  const ss = String(d.getSeconds()).padStart(2, "0");
+  return `PO-${yyyy}${mm}${dd}-${hh}${mi}${ss}`;
+}
+
+function material_makeCode(n) {
+  return "item_" + String(n).padStart(5, "0");
+}
+
+/* =========================
+   발주서
+========================= */
+let purchase_orderItems = [];
+let purchase_loadedOrderId = null;
+let purchase_loadedMode = "new";
+let purchase_currentVendorContactName = "";
+let purchase_currentVendorContactPhone = "";
+
+function purchase_setModeInfo() {
+  const box = document.getElementById("purchase_modeInfo");
+  if (purchase_loadedMode === "loaded" && purchase_loadedOrderId) {
+    box.textContent = `불러온 발주 수정 모드 / 재출력 가능 / 발주ID: ${purchase_loadedOrderId}`;
+  } else {
+    box.textContent = "신규 작성 모드";
+  }
+}
+
+function purchase_syncHeaderDisplay() {
+  const vendorSelect = document.getElementById("purchase_vendor_select");
+  const vendorName = vendorSelect.selectedOptions[0]?.text || "업체 미선택";
+  const requesterCompany = document.getElementById("purchase_requester_company").value || "AK디자인";
+  const requesterName = document.getElementById("purchase_requester_name").value || "-";
+  const requesterPhone = document.getElementById("purchase_requester_phone").value || "-";
+  const siteAddress = document.getElementById("purchase_site_address").value || "-";
+  const orderDate = document.getElementById("purchase_order_date").value || "-";
+  const arrivalDate = document.getElementById("purchase_arrival_date").value || "-";
+  const memo = document.getElementById("purchase_memo").value || "-";
+
+  document.getElementById("purchase_vendorNameText").textContent = vendorName;
+  document.getElementById("purchase_vendorContactNameText").textContent = purchase_currentVendorContactName || "-";
+  document.getElementById("purchase_vendorContactPhoneText").textContent = purchase_currentVendorContactPhone || "-";
+  document.getElementById("purchase_requesterCompanyText").textContent = requesterCompany;
+  document.getElementById("purchase_requesterNameText").textContent = requesterName;
+  document.getElementById("purchase_requesterPhoneText").textContent = requesterPhone;
+  document.getElementById("purchase_siteAddressText").textContent = siteAddress;
+  document.getElementById("purchase_orderDateText").textContent = orderDate;
+  document.getElementById("purchase_arrivalDateText").textContent = arrivalDate;
+  document.getElementById("purchase_memoText").textContent = memo;
+  document.getElementById("purchase_siteAddressLineWrap").style.display = siteAddress === "-" ? "none" : "block";
+}
+
+function purchase_clearHeaderInputs() {
+  purchase_currentVendorContactName = "";
+  purchase_currentVendorContactPhone = "";
+  document.getElementById("purchase_order_no").value = "";
+  document.getElementById("purchase_vendor_select").value = "";
+  document.getElementById("purchase_requester_company").value = "AK디자인";
+  document.getElementById("purchase_requester_name_select").value = "";
+  document.getElementById("purchase_requester_name").value = "";
+  document.getElementById("purchase_requester_phone").value = "";
+  document.getElementById("purchase_site_name").value = "";
+  document.getElementById("purchase_site_address").value = "";
+  document.getElementById("purchase_order_date").value = todayString();
+  document.getElementById("purchase_arrival_date").value = "";
+  document.getElementById("purchase_memo").value = "";
+  purchase_syncHeaderDisplay();
+}
+
+function purchase_clearSearchInputs() {
+  document.getElementById("purchase_search_order_no").value = "";
+  document.getElementById("purchase_search_vendor_name").value = "";
+  document.getElementById("purchase_search_site_name").value = "";
+}
+
+function purchase_newOrder() {
+  purchase_loadedOrderId = null;
+  purchase_loadedMode = "new";
+  purchase_orderItems = [];
+  purchase_clearHeaderInputs();
+  document.getElementById("purchase_order_no").value = orderNoString();
+  purchase_renderOrderItems();
+  document.getElementById("purchase_materialBody").innerHTML = "";
+  purchase_setModeInfo();
+  purchase_syncHeaderDisplay();
+}
+
+async function purchase_loadVendors() {
+  const { data, error } = await db.from("vendors").select("*").order("vendor_name", { ascending: true });
+  if (error) {
+    alert("업체 불러오기 실패: " + error.message);
+    return;
+  }
+  const sel = document.getElementById("purchase_vendor_select");
+  sel.innerHTML = '<option value="">업체 선택</option>';
+  data.forEach(v => {
+    sel.innerHTML += `<option value="${v.id}">${v.vendor_name}</option>`;
+  });
+}
+
+async function purchase_loadRequesterContacts() {
+  const { data, error } = await db
+    .from("requester_contacts")
+    .select("*")
+    .eq("company_name", "AK디자인")
+    .eq("is_active", true)
+    .order("contact_name", { ascending: true });
+
+  if (error) {
+    alert("발주처 담당자 불러오기 실패: " + error.message);
+    return;
+  }
+
+  const sel = document.getElementById("purchase_requester_name_select");
+  sel.innerHTML = '<option value="">담당자 선택</option>';
+  data.forEach(row => {
+    sel.innerHTML += `<option value="${row.id}" data-phone="${row.contact_phone}">${row.contact_name}</option>`;
+  });
+}
+
+function purchase_fillRequesterPhoneFromSelect() {
+  const sel = document.getElementById("purchase_requester_name_select");
+  const option = sel.selectedOptions[0];
+  if (!option || !sel.value) {
+    document.getElementById("purchase_requester_name").value = "";
+    document.getElementById("purchase_requester_phone").value = "";
+    purchase_syncHeaderDisplay();
+    return;
+  }
+  document.getElementById("purchase_requester_name").value = option.textContent || "";
+  document.getElementById("purchase_requester_phone").value = option.getAttribute("data-phone") || "";
+  purchase_syncHeaderDisplay();
+}
+
+async function purchase_loadVendorMaterials() {
+  const vendorId = document.getElementById("purchase_vendor_select").value;
+  const body = document.getElementById("purchase_materialBody");
+  body.innerHTML = "";
+
+  purchase_currentVendorContactName = "";
+  purchase_currentVendorContactPhone = "";
+  purchase_syncHeaderDisplay();
+
+  if (!vendorId) return;
+
+  const { data: vendorRow, error: vendorError } = await db
+    .from("vendors")
+    .select("vendor_contact_name, vendor_contact_phone")
+    .eq("id", vendorId)
+    .single();
+
+  if (!vendorError && vendorRow) {
+    purchase_currentVendorContactName = vendorRow.vendor_contact_name || "";
+    purchase_currentVendorContactPhone = vendorRow.vendor_contact_phone || "";
+  }
+
+  const { data, error } = await db
+    .from("materials")
+    .select("*")
+    .eq("vendor_id", vendorId)
+    .order("item_name", { ascending: true });
+
+  if (error) {
+    alert("자재 불러오기 실패: " + error.message);
+    return;
+  }
+
+  data.forEach(row => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${row.item_name ?? ""}</td>
+      <td>${row.unit ?? ""}</td>
+      <td>${row.stock_qty ?? 0}</td>
+    `;
+    tr.onclick = () => purchase_addOrderItem(row);
+    body.appendChild(tr);
+  });
+
+  purchase_syncHeaderDisplay();
+}
+
+function purchase_addOrderItem(row) {
+  const foundIndex = purchase_orderItems.findIndex(x => x.material_id === row.id);
+  if (foundIndex >= 0) {
+    purchase_orderItems[foundIndex].order_qty += 1;
+  } else {
+    purchase_orderItems.push({
+      material_id: row.id,
+      item_name_snapshot: row.item_name ?? "",
+      unit_snapshot: row.unit ?? "",
+      order_qty: 1
+    });
+  }
+  purchase_renderOrderItems();
+}
+
+function purchase_removeOrderItem(index) {
+  purchase_orderItems.splice(index, 1);
+  purchase_renderOrderItems();
+}
+
+function purchase_updateQty(index, value) {
+  const qty = Number(value || 0);
+  purchase_orderItems[index].order_qty = qty < 0 ? 0 : qty;
+}
+
+function purchase_renderOrderItems() {
+  const body = document.getElementById("purchase_orderItemBody");
+  body.innerHTML = "";
+
+  purchase_orderItems.forEach((row, index) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${row.item_name_snapshot ?? ""}</td>
+      <td>${row.unit_snapshot ?? ""}</td>
+      <td>
+        <input class="table-input" type="number" min="0" value="${row.order_qty ?? 0}"
+          oninput="purchase_updateQty(${index}, this.value)">
+      </td>
+      <td class="no-print">
+        <button class="danger-btn" onclick="purchase_removeOrderItem(${index})">삭제</button>
+      </td>
+    `;
+    body.appendChild(tr);
+  });
+}
+
+function purchase_getHeaderFormData() {
+  const vendorSelect = document.getElementById("purchase_vendor_select");
+  return {
+    order_no: document.getElementById("purchase_order_no").value.trim(),
+    vendor_id: vendorSelect.value || null,
+    vendor_name: vendorSelect.selectedOptions[0]?.text || "",
+    vendor_contact_name: purchase_currentVendorContactName || "",
+    vendor_contact_phone: purchase_currentVendorContactPhone || "",
+    requester_company: "AK디자인",
+    requester_name: document.getElementById("purchase_requester_name").value.trim(),
+    requester_phone: document.getElementById("purchase_requester_phone").value.trim(),
+    site_name: document.getElementById("purchase_site_name").value.trim(),
+    site_address: document.getElementById("purchase_site_address").value.trim(),
+    order_date: document.getElementById("purchase_order_date").value,
+    arrival_date: document.getElementById("purchase_arrival_date").value,
+    memo: document.getElementById("purchase_memo").value.trim()
+  };
+}
+
+function purchase_validateOrderData(formData) {
+  if (!formData.order_no) return alert("발주번호를 먼저 생성하세요."), false;
+  if (!formData.vendor_id) return alert("업체를 선택하세요."), false;
+  if (!formData.requester_name || !formData.requester_phone) return alert("발주처 담당자와 전화번호를 입력하세요."), false;
+  if (purchase_orderItems.length === 0) return alert("발주 항목을 한 개 이상 추가하세요."), false;
+  const validItems = purchase_orderItems.filter(x => Number(x.order_qty) > 0);
+  if (validItems.length === 0) return alert("수량이 0보다 큰 항목이 필요합니다."), false;
+  return true;
+}
+
+async function purchase_saveOrder() {
+  if (purchase_loadedMode === "loaded") {
+    alert("현재 불러온 발주입니다. 신규 저장이 아니라 수정 저장을 사용하세요.");
+    return;
+  }
+
+  const formData = purchase_getHeaderFormData();
+  if (!purchase_validateOrderData(formData)) return;
+
+  const validItems = purchase_orderItems.filter(x => Number(x.order_qty) > 0);
+
+  const { data: orderData, error: orderError } = await db
+    .from("purchase_lists")
+    .insert([{ ...formData, updated_at: new Date().toISOString() }])
+    .select()
+    .single();
+
+  if (orderError) {
+    alert("발주 저장 실패: " + orderError.message);
+    return;
+  }
+
+  const itemRows = validItems.map(x => ({
+    purchase_list_id: orderData.id,
+    material_id: x.material_id,
+    item_name_snapshot: x.item_name_snapshot,
+    unit_snapshot: x.unit_snapshot,
+    order_qty: x.order_qty,
+    updated_at: new Date().toISOString()
+  }));
+
+  const { error: itemError } = await db.from("purchase_list_items").insert(itemRows);
+  if (itemError) {
+    alert("발주 상세 저장 실패: " + itemError.message);
+    return;
+  }
+
+  alert("발주 저장 완료");
+  purchase_loadedOrderId = orderData.id;
+  purchase_loadedMode = "loaded";
+  purchase_setModeInfo();
+  await purchase_loadRecentOrders();
+}
+
+async function purchase_updateOrder() {
+  if (!purchase_loadedOrderId) {
+    alert("먼저 조회해서 불러온 발주만 수정 저장할 수 있습니다.");
+    return;
+  }
+
+  const confirmResult = confirm("정말 수정 저장하시겠습니까?\n기존 발주 상세내역은 현재 화면 내용으로 교체됩니다.");
+  if (!confirmResult) return;
+
+  const formData = purchase_getHeaderFormData();
+  if (!purchase_validateOrderData(formData)) return;
+
+  const validItems = purchase_orderItems.filter(x => Number(x.order_qty) > 0);
+
+  const { error: headerError } = await db
+    .from("purchase_lists")
+    .update({ ...formData, updated_at: new Date().toISOString() })
+    .eq("id", purchase_loadedOrderId);
+
+  if (headerError) {
+    alert("발주 헤더 수정 실패: " + headerError.message);
+    return;
+  }
+
+  const { error: deleteError } = await db
+    .from("purchase_list_items")
+    .delete()
+    .eq("purchase_list_id", purchase_loadedOrderId);
+
+  if (deleteError) {
+    alert("기존 발주 상세 삭제 실패: " + deleteError.message);
+    return;
+  }
+
+  const itemRows = validItems.map(x => ({
+    purchase_list_id: purchase_loadedOrderId,
+    material_id: x.material_id,
+    item_name_snapshot: x.item_name_snapshot,
+    unit_snapshot: x.unit_snapshot,
+    order_qty: x.order_qty,
+    updated_at: new Date().toISOString()
+  }));
+
+  const { error: insertError } = await db.from("purchase_list_items").insert(itemRows);
+  if (insertError) {
+    alert("수정 상세 저장 실패: " + insertError.message);
+    return;
+  }
+
+  alert("수정 저장 완료");
+  await purchase_loadRecentOrders();
+}
+
+async function purchase_loadRecentOrders() {
+  const { data, error } = await db
+    .from("purchase_lists")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(30);
+
+  if (error) {
+    alert("최근 발주 조회 실패: " + error.message);
+    return;
+  }
+
+  purchase_renderSearchOrders(data || []);
+}
+
+async function purchase_searchOrders() {
+  const searchOrderNo = document.getElementById("purchase_search_order_no").value.trim();
+  const searchVendorName = document.getElementById("purchase_search_vendor_name").value.trim();
+  const searchSiteName = document.getElementById("purchase_search_site_name").value.trim();
+
+  let query = db.from("purchase_lists").select("*").order("created_at", { ascending: false }).limit(100);
+  if (searchOrderNo) query = query.ilike("order_no", `%${searchOrderNo}%`);
+  if (searchVendorName) query = query.ilike("vendor_name", `%${searchVendorName}%`);
+  if (searchSiteName) query = query.ilike("site_name", `%${searchSiteName}%`);
+
+  const { data, error } = await query;
+  if (error) {
+    alert("발주 조회 실패: " + error.message);
+    return;
+  }
+
+  purchase_renderSearchOrders(data || []);
+}
+
+function purchase_renderSearchOrders(rows) {
+  const body = document.getElementById("purchase_orderSearchBody");
+  body.innerHTML = "";
+
+  rows.forEach(row => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${row.order_no ?? ""}</td>
+      <td>${row.vendor_name ?? ""}</td>
+      <td>${row.site_name ?? ""}</td>
+      <td>${row.order_date ?? ""}</td>
+      <td>${row.arrival_date ?? ""}</td>
+    `;
+    tr.onclick = () => purchase_loadOrderDetail(row.id);
+    body.appendChild(tr);
+  });
+}
+
+async function purchase_loadOrderDetail(orderId) {
+  const { data: header, error: headerError } = await db
+    .from("purchase_lists")
+    .select("*")
+    .eq("id", orderId)
+    .single();
+
+  if (headerError) {
+    alert("발주 헤더 불러오기 실패: " + headerError.message);
+    return;
+  }
+
+  const { data: items, error: itemsError } = await db
+    .from("purchase_list_items")
+    .select("*")
+    .eq("purchase_list_id", orderId)
+    .order("created_at", { ascending: true });
+
+  if (itemsError) {
+    alert("발주 상세 불러오기 실패: " + itemsError.message);
+    return;
+  }
+
+  purchase_loadedOrderId = header.id;
+  purchase_loadedMode = "loaded";
+  purchase_currentVendorContactName = header.vendor_contact_name || "";
+  purchase_currentVendorContactPhone = header.vendor_contact_phone || "";
+
+  document.getElementById("purchase_order_no").value = header.order_no ?? "";
+  document.getElementById("purchase_vendor_select").value = header.vendor_id ?? "";
+  document.getElementById("purchase_requester_company").value = header.requester_company ?? "AK디자인";
+  document.getElementById("purchase_requester_name").value = header.requester_name ?? "";
+  document.getElementById("purchase_requester_phone").value = header.requester_phone ?? "";
+  document.getElementById("purchase_site_name").value = header.site_name ?? "";
+  document.getElementById("purchase_site_address").value = header.site_address ?? "";
+  document.getElementById("purchase_order_date").value = header.order_date ?? "";
+  document.getElementById("purchase_arrival_date").value = header.arrival_date ?? "";
+  document.getElementById("purchase_memo").value = header.memo ?? "";
+
+  purchase_orderItems = (items || []).map(x => ({
+    material_id: x.material_id,
+    item_name_snapshot: x.item_name_snapshot ?? "",
+    unit_snapshot: x.unit_snapshot ?? "",
+    order_qty: Number(x.order_qty || 0)
+  }));
+
+  purchase_renderOrderItems();
+  purchase_setModeInfo();
+  await purchase_loadVendorMaterials();
+  purchase_currentVendorContactName = header.vendor_contact_name || purchase_currentVendorContactName;
+  purchase_currentVendorContactPhone = header.vendor_contact_phone || purchase_currentVendorContactPhone;
+  purchase_syncHeaderDisplay();
+
+  alert("발주 상세 불러오기 완료");
+}
+
+/* =========================
+   업체/자재 관리
+========================= */
+let material_selectedMaterial = null;
+let material_selectedVendorManageId = null;
+let material_selectedRequesterId = null;
+
+async function material_loadRequesterList() {
+  const { data, error } = await db
+    .from("requester_contacts")
+    .select("*")
+    .eq("company_name", "AK디자인")
+    .eq("is_active", true)
+    .order("contact_name", { ascending: true });
+
+  if (error) {
+    alert("발주처 담당자 불러오기 실패: " + error.message);
+    return;
+  }
+
+  const sel = document.getElementById("material_requester_manage_select");
+  sel.innerHTML = '<option value="">담당자 선택</option>';
+  data.forEach(r => {
+    sel.innerHTML += `<option value="${r.id}">${r.contact_name}</option>`;
+  });
+}
+
+function material_resetRequesterForm() {
+  material_selectedRequesterId = null;
+  document.getElementById("material_requester_manage_select").value = "";
+  document.getElementById("material_requester_contact_name").value = "";
+  document.getElementById("material_requester_contact_phone").value = "";
+}
+
+async function material_loadRequesterToForm() {
+  const id = document.getElementById("material_requester_manage_select").value;
+  material_selectedRequesterId = id || null;
+  if (!id) {
+    material_resetRequesterForm();
+    return;
+  }
+
+  const { data, error } = await db
+    .from("requester_contacts")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error) {
+    alert("발주처 담당자 조회 실패: " + error.message);
+    return;
+  }
+
+  material_selectedRequesterId = data.id;
+  document.getElementById("material_requester_contact_name").value = data.contact_name || "";
+  document.getElementById("material_requester_contact_phone").value = data.contact_phone || "";
+}
+
+async function material_saveRequesterContact() {
+  const contact_name = document.getElementById("material_requester_contact_name").value.trim();
+  const contact_phone = document.getElementById("material_requester_contact_phone").value.trim();
+
+  if (!contact_name || !contact_phone) {
+    alert("발주처 담당자명과 전화번호를 입력하세요.");
+    return;
+  }
+
+  const { error } = await db
+    .from("requester_contacts")
+    .insert([{
+      company_name: "AK디자인",
+      contact_name,
+      contact_phone,
+      is_active: true
+    }]);
+
+  if (error) {
+    alert("발주처 담당자 저장 실패: " + error.message);
+    return;
+  }
+
+  alert("발주처 담당자 저장 완료");
+  await material_loadRequesterList();
+  await purchase_loadRequesterContacts();
+  material_resetRequesterForm();
+}
+
+async function material_updateRequesterContact() {
+  const contact_name = document.getElementById("material_requester_contact_name").value.trim();
+  const contact_phone = document.getElementById("material_requester_contact_phone").value.trim();
+
+  if (!contact_name || !contact_phone) {
+    alert("발주처 담당자명과 전화번호를 입력하세요.");
+    return;
+  }
+
+  let targetId = material_selectedRequesterId;
+
+  if (!targetId) {
+    const { data: foundRows, error: findError } = await db
+      .from("requester_contacts")
+      .select("id, contact_name")
+      .eq("company_name", "AK디자인")
+      .eq("contact_name", contact_name)
+      .eq("is_active", true);
+
+    if (findError) {
+      alert("수정 대상 조회 실패: " + findError.message);
+      return;
+    }
+
+    if (!foundRows || foundRows.length === 0) {
+      alert("수정할 기존 발주처 담당자를 찾지 못했습니다.");
+      return;
+    }
+
+    if (foundRows.length > 1) {
+      alert("같은 담당자명이 여러 개 있습니다. 드롭다운에서 먼저 선택하세요.");
+      return;
+    }
+
+    targetId = foundRows[0].id;
+  }
+
+  if (!confirm("선택한 발주처 담당자 정보를 수정 저장하시겠습니까?")) return;
+
+  const { error } = await db
+    .from("requester_contacts")
+    .update({ contact_name, contact_phone })
+    .eq("id", targetId);
+
+  if (error) {
+    alert("발주처 담당자 수정 실패: " + error.message);
+    return;
+  }
+
+  alert("발주처 담당자 수정 완료");
+  await material_loadRequesterList();
+  await purchase_loadRequesterContacts();
+  document.getElementById("material_requester_manage_select").value = targetId;
+  material_selectedRequesterId = targetId;
+  await material_loadRequesterToForm();
+}
+
+async function material_loadVendor() {
+  const { data, error } = await db
+    .from("vendors")
+    .select("*")
+    .order("vendor_name", { ascending: true });
+
+  if (error) {
+    alert("업체 불러오기 실패: " + error.message);
+    return;
+  }
+
+  const sel1 = document.getElementById("material_vendor_select");
+  const sel2 = document.getElementById("material_vendor_manage_select");
+  const purchaseSel = document.getElementById("purchase_vendor_select");
+
+  sel1.innerHTML = '<option value="">업체 선택</option>';
+  sel2.innerHTML = '<option value="">업체 선택</option>';
+  purchaseSel.innerHTML = '<option value="">업체 선택</option>';
+
+  data.forEach(v => {
+    sel1.innerHTML += `<option value="${v.id}">${v.vendor_name}</option>`;
+    sel2.innerHTML += `<option value="${v.id}">${v.vendor_name}</option>`;
+    purchaseSel.innerHTML += `<option value="${v.id}">${v.vendor_name}</option>`;
+  });
+}
+
+function material_resetVendorForm() {
+  material_selectedVendorManageId = null;
+  document.getElementById("material_vendor_manage_select").value = "";
+  document.getElementById("material_vendor_name").value = "";
+  document.getElementById("material_vendor_contact_name").value = "";
+  document.getElementById("material_vendor_contact_phone").value = "";
+}
+
+async function material_loadVendorToForm() {
+  const id = document.getElementById("material_vendor_manage_select").value;
+  material_selectedVendorManageId = id || null;
+
+  if (!id) {
+    material_resetVendorForm();
+    return;
+  }
+
+  const { data, error } = await db
+    .from("vendors")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error) {
+    alert("업체 조회 실패: " + error.message);
+    return;
+  }
+
+  material_selectedVendorManageId = data.id;
+  document.getElementById("material_vendor_name").value = data.vendor_name || "";
+  document.getElementById("material_vendor_contact_name").value = data.vendor_contact_name || "";
+  document.getElementById("material_vendor_contact_phone").value = data.vendor_contact_phone || "";
+}
+
+async function material_saveVendor() {
+  const vendor_name = document.getElementById("material_vendor_name").value.trim();
+  const vendor_contact_name = document.getElementById("material_vendor_contact_name").value.trim();
+  const vendor_contact_phone = document.getElementById("material_vendor_contact_phone").value.trim();
+
+  if (!vendor_name) {
+    alert("업체명을 입력하세요.");
+    return;
+  }
+
+  const { error } = await db
+    .from("vendors")
+    .insert([{ vendor_name, vendor_contact_name, vendor_contact_phone }]);
+
+  if (error) {
+    alert("업체 저장 실패: " + error.message);
+    return;
+  }
+
+  alert("업체 저장 완료");
+  await material_loadVendor();
+  material_resetVendorForm();
+}
+
+async function material_updateVendor() {
+  const vendor_name = document.getElementById("material_vendor_name").value.trim();
+  const vendor_contact_name = document.getElementById("material_vendor_contact_name").value.trim();
+  const vendor_contact_phone = document.getElementById("material_vendor_contact_phone").value.trim();
+
+  if (!vendor_name) {
+    alert("업체명을 입력하세요.");
+    return;
+  }
+
+  let targetId = material_selectedVendorManageId;
+
+  if (!targetId) {
+    const { data: foundRows, error: findError } = await db
+      .from("vendors")
+      .select("id, vendor_name")
+      .eq("vendor_name", vendor_name);
+
+    if (findError) {
+      alert("수정 대상 조회 실패: " + findError.message);
+      return;
+    }
+
+    if (!foundRows || foundRows.length === 0) {
+      alert("수정할 기존 업체를 찾지 못했습니다.");
+      return;
+    }
+
+    if (foundRows.length > 1) {
+      alert("같은 업체명이 여러 개 있습니다. 드롭다운에서 먼저 선택하세요.");
+      return;
+    }
+
+    targetId = foundRows[0].id;
+  }
+
+  if (!confirm("선택한 업체 정보를 수정 저장하시겠습니까?")) return;
+
+  const { error } = await db
+    .from("vendors")
+    .update({ vendor_name, vendor_contact_name, vendor_contact_phone })
+    .eq("id", targetId);
+
+  if (error) {
+    alert("업체 수정 실패: " + error.message);
+    return;
+  }
+
+  alert("업체 수정 완료");
+  await material_loadVendor();
+  document.getElementById("material_vendor_manage_select").value = targetId;
+  material_selectedVendorManageId = targetId;
+  await material_loadVendorToForm();
+}
+
+async function material_getNextCode() {
+  const { data, error } = await db
+    .from("materials")
+    .select("item_code")
+    .order("item_code", { ascending: false })
+    .limit(1);
+
+  if (error) {
+    alert("자재코드 조회 실패: " + error.message);
+    return "item_00001";
+  }
+
+  if (!data || !data.length) return "item_00001";
+
+  const lastCode = data[0].item_code || "item_00000";
+  const num = parseInt(lastCode.replace("item_", "")) + 1;
+  return material_makeCode(num);
+}
+
+async function material_saveMaterial() {
+  const vendor_id = document.getElementById("material_vendor_select").value;
+  const item_code = await material_getNextCode();
+  const item_name = document.getElementById("material_item_name").value.trim();
+  const spec = document.getElementById("material_spec").value.trim();
+  const unit = document.getElementById("material_unit").value.trim();
+  const note = document.getElementById("material_note").value.trim();
+
+  if (!vendor_id) {
+    alert("업체를 선택하세요.");
+    return;
+  }
+
+  if (!item_name) {
+    alert("자재명을 입력하세요.");
+    return;
+  }
+
+  const { error } = await db
+    .from("materials")
+    .insert([{ vendor_id, item_code, item_name, spec, unit, stock_qty: 0, note }]);
+
+  if (error) {
+    alert("자재 저장 실패: " + error.message);
+    return;
+  }
+
+  alert("자재 저장 완료");
+  await material_loadMaterials();
+  await material_resetMaterialForm();
+}
+
+async function material_updateMaterial() {
+  if (!material_selectedMaterial) {
+    alert("수정할 자재를 먼저 선택하세요.");
+    return;
+  }
+
+  const vendor_id = document.getElementById("material_vendor_select").value;
+  const item_name = document.getElementById("material_item_name").value.trim();
+  const spec = document.getElementById("material_spec").value.trim();
+  const unit = document.getElementById("material_unit").value.trim();
+  const note = document.getElementById("material_note").value.trim();
+
+  if (!vendor_id) {
+    alert("업체를 선택하세요.");
+    return;
+  }
+
+  if (!item_name) {
+    alert("자재명을 입력하세요.");
+    return;
+  }
+
+  const { error } = await db
+    .from("materials")
+    .update({ vendor_id, item_name, spec, unit, note })
+    .eq("id", material_selectedMaterial.id);
+
+  if (error) {
+    alert("자재 수정 실패: " + error.message);
+    return;
+  }
+
+  alert("자재 수정 완료");
+  await material_loadMaterials();
+}
+
+function material_selectMaterialRow(r) {
+  material_selectedMaterial = r;
+  document.getElementById("material_vendor_select").value = r.vendor_id || "";
+  document.getElementById("material_item_code").value = r.item_code || "";
+  document.getElementById("material_item_name").value = r.item_name || "";
+  document.getElementById("material_spec").value = r.spec || "";
+  document.getElementById("material_unit").value = r.unit || "";
+  document.getElementById("material_stock_qty").value = r.stock_qty || 0;
+  document.getElementById("material_note").value = r.note || "";
+}
+
+async function material_changeStock() {
+  if (!material_selectedMaterial) {
+    alert("자재를 먼저 선택하세요.");
+    return;
+  }
+
+  const type = document.getElementById("material_type").value;
+  const qty = Number(document.getElementById("material_qty").value || 0);
+
+  if (qty < 0) {
+    alert("수량은 0 이상이어야 합니다.");
+    return;
+  }
+
+  let stock = Number(material_selectedMaterial.stock_qty || 0);
+  if (type === "IN") stock += qty;
+  if (type === "OUT") stock -= qty;
+  if (type === "ADJUST") stock = qty;
+
+  const { error } = await db
+    .from("materials")
+    .update({ stock_qty: stock })
+    .eq("id", material_selectedMaterial.id);
+
+  if (error) {
+    alert("재고 반영 실패: " + error.message);
+    return;
+  }
+
+  alert("재고 반영 완료");
+  await material_loadMaterials();
+}
+
+async function material_loadMaterials() {
+  const { data, error } = await db
+    .from("materials")
+    .select("*, vendors(vendor_name)")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    alert("목록 불러오기 실패: " + error.message);
+    return;
+  }
+
+  const body = document.getElementById("material_body");
+  body.innerHTML = "";
+
+  data.forEach(r => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${r.vendors?.vendor_name || ""}</td>
+      <td>${r.item_code || ""}</td>
+      <td>${r.item_name || ""}</td>
+      <td>${r.spec || ""}</td>
+      <td>${r.unit || ""}</td>
+      <td>${r.stock_qty || 0}</td>
+    `;
+    tr.onclick = () => material_selectMaterialRow(r);
+    body.appendChild(tr);
+  });
+}
+
+async function material_resetMaterialForm() {
+  material_selectedMaterial = null;
+  document.getElementById("material_vendor_select").value = "";
+  document.getElementById("material_item_code").value = await material_getNextCode();
+  document.getElementById("material_item_name").value = "";
+  document.getElementById("material_spec").value = "";
+  document.getElementById("material_unit").value = "";
+  document.getElementById("material_stock_qty").value = "";
+  document.getElementById("material_note").value = "";
+}
+
+/* =========================
+   입고 처리
+========================= */
+let receipt_selectedId = null;
+let receipt_selectedHeader = null;
+let receipt_items = [];
+
+async function receipt_loadRecent() {
+  const { data, error } = await db
+    .from("purchase_lists")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  if (error) {
+    alert("최근 발주 조회 실패: " + error.message);
+    return;
+  }
+
+  const body = document.getElementById("receipt_orderBody");
+  body.innerHTML = "";
+
+  data.forEach(r => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${r.order_no ?? ""}</td>
+      <td>${r.vendor_name ?? ""}</td>
+      <td>${r.order_date ?? ""}</td>
+    `;
+    tr.onclick = () => {
+      document.querySelectorAll("#receipt_orderBody tr").forEach(x => x.classList.remove("selected"));
+      tr.classList.add("selected");
+      receipt_selectedId = r.id;
+      receipt_selectedHeader = r;
+    };
+    body.appendChild(tr);
+  });
+}
+
+async function receipt_loadSelected() {
+  if (!receipt_selectedId) {
+    alert("발주를 먼저 선택하세요.");
+    return;
+  }
+
+  document.getElementById("receipt_selected_order_no").value = receipt_selectedHeader?.order_no ?? "";
+  document.getElementById("receipt_selected_vendor_name").value = receipt_selectedHeader?.vendor_name ?? "";
+  document.getElementById("receipt_selected_order_date").value = receipt_selectedHeader?.order_date ?? "";
+
+  const { data, error } = await db
+    .from("purchase_list_items")
+    .select("*")
+    .eq("purchase_list_id", receipt_selectedId)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    alert("발주 상세 조회 실패: " + error.message);
+    return;
+  }
+
+  receipt_items = [];
+
+  for (const row of data) {
+    let currentStock = 0;
+
+    if (row.material_id) {
+      const { data: matData } = await db
+        .from("materials")
+        .select("stock_qty")
+        .eq("id", row.material_id)
+        .maybeSingle();
+
+      currentStock = Number(matData?.stock_qty || 0);
+    }
+
+    const orderQty = Number(row.order_qty || 0);
+    const receiptQty = Number(row.receipt_qty || 0);
+    const remainQty = Math.max(orderQty - receiptQty, 0);
+    const done = row.receipt_done || remainQty === 0;
+
+    receipt_items.push({
+      id: row.id,
+      material_id: row.material_id,
+      item_name_snapshot: row.item_name_snapshot ?? "",
+      order_qty: orderQty,
+      receipt_qty: receiptQty,
+      remain_qty: remainQty,
+      current_stock: currentStock,
+      receive_qty: 0,
+      receipt_done: done
+    });
+  }
+
+  receipt_render();
+}
+
+function receipt_render() {
+  const body = document.getElementById("receipt_itemBody");
+  body.innerHTML = "";
+
+  receipt_items.forEach((r, i) => {
+    const statusText = r.receipt_done ? "입고완료" : "입고대기";
+    const statusClass = r.receipt_done ? "done" : "warn";
+
+    body.innerHTML += `
+      <tr>
+        <td>${r.item_name_snapshot}</td>
+        <td>${r.order_qty}</td>
+        <td>${r.receipt_qty}</td>
+        <td>${r.remain_qty}</td>
+        <td>${r.current_stock}</td>
+        <td>
+          <input class="table-input" type="number"
+                 min="0"
+                 max="${r.remain_qty}"
+                 value="0"
+                 ${r.receipt_done ? "disabled" : ""}
+                 onchange="receipt_setReceiveQty(${i}, this.value)">
+        </td>
+        <td class="${statusClass}">${statusText}</td>
+      </tr>
+    `;
+  });
+}
+
+function receipt_setReceiveQty(index, value) {
+  const qty = Number(value || 0);
+  const remain = Number(receipt_items[index].remain_qty || 0);
+
+  if (qty > remain) {
+    alert("잔량보다 많이 입력할 수 없습니다.");
+    receipt_items[index].receive_qty = remain;
+    receipt_render();
+    return;
+  }
+
+  receipt_items[index].receive_qty = qty < 0 ? 0 : qty;
+}
+
+async function receipt_process() {
+  if (!receipt_selectedId) {
+    alert("발주를 선택하세요.");
+    return;
+  }
+
+  const memo = document.getElementById("receipt_memo").value.trim();
+  const targets = receipt_items.filter(x => !x.receipt_done && Number(x.receive_qty) > 0);
+
+  if (targets.length === 0) {
+    alert("입고 처리할 수량을 입력하세요.");
+    return;
+  }
+
+  if (!confirm("입고 처리 진행하시겠습니까?\n재고가 증가하고 입고이력이 저장됩니다.")) {
+    return;
+  }
+
+  for (const r of targets) {
+    if (!r.material_id) {
+      alert(`자재 연결이 없는 항목입니다: ${r.item_name_snapshot}`);
+      return;
+    }
+
+    if (Number(r.receive_qty) > Number(r.remain_qty)) {
+      alert(`잔량 초과 항목이 있습니다: ${r.item_name_snapshot}`);
+      return;
+    }
+
+    const { data: mat, error: matError } = await db
+      .from("materials")
+      .select("*")
+      .eq("id", r.material_id)
+      .single();
+
+    if (matError) {
+      alert("자재 조회 실패: " + matError.message);
+      return;
+    }
+
+    const beforeQty = Number(mat.stock_qty || 0);
+    const addQty = Number(r.receive_qty || 0);
+    const newQty = beforeQty + addQty;
+
+    const { error: updateMatError } = await db
+      .from("materials")
+      .update({
+        stock_qty: newQty,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", r.material_id);
+
+    if (updateMatError) {
+      alert("재고 업데이트 실패: " + updateMatError.message);
+      return;
+    }
+
+    const newReceiptQty = Number(r.receipt_qty || 0) + addQty;
+    const isDone = newReceiptQty >= Number(r.order_qty || 0);
+
+    const { error: updateItemError } = await db
+      .from("purchase_list_items")
+      .update({
+        receipt_qty: newReceiptQty,
+        receipt_done: isDone,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", r.id);
+
+    if (updateItemError) {
+      alert("입고상태 업데이트 실패: " + updateItemError.message);
+      return;
+    }
+
+    const { error: logError } = await db
+      .from("stock_logs")
+      .insert([{
+        material_id: r.material_id,
+        change_type: "IN",
+        qty: addQty,
+        before_qty: beforeQty,
+        after_qty: newQty,
+        memo: `[입고] ${receipt_selectedHeader?.order_no ?? ""} / ${memo}`
+      }]);
+
+    if (logError) {
+      alert("입고이력 저장 실패: " + logError.message);
+      return;
+    }
+  }
+
+  alert("입고 완료");
+  await receipt_loadSelected();
+  await material_loadMaterials();
+  await purchase_loadVendorMaterials();
+}
+
+/* =========================
+   업체 삭제
+========================= */
+let vendorDelete_selectedVendorId = null;
+let vendorDelete_selectedVendorName = "";
+
+async function vendorDelete_loadVendors() {
+  const keyword = document.getElementById("vendorDelete_search_vendor").value.trim();
+
+  let query = db.from("vendors").select("*").order("vendor_name", { ascending: true });
+  if (keyword) query = query.ilike("vendor_name", `%${keyword}%`);
+
+  const { data, error } = await query;
+  if (error) {
+    alert("업체 불러오기 실패: " + error.message);
+    return;
+  }
+
+  const body = document.getElementById("vendorDelete_vendorBody");
+  body.innerHTML = "";
+
+  data.forEach(row => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${row.vendor_name ?? ""}</td>
+      <td>${row.vendor_contact_name ?? ""}</td>
+      <td>${row.vendor_contact_phone ?? ""}</td>
+    `;
+    tr.onclick = () => {
+      document.querySelectorAll("#vendorDelete_vendorBody tr").forEach(x => x.classList.remove("selected"));
+      tr.classList.add("selected");
+      vendorDelete_selectedVendorId = row.id;
+      vendorDelete_selectedVendorName = row.vendor_name ?? "";
+      document.getElementById("vendorDelete_selected_vendor_name").value = vendorDelete_selectedVendorName;
+    };
+    body.appendChild(tr);
+  });
+}
+
+async function vendorDelete_deleteVendor() {
+  if (!vendorDelete_selectedVendorId) {
+    alert("먼저 삭제할 업체를 선택하세요.");
+    return;
+  }
+
+  if (!confirm(`정말로 "${vendorDelete_selectedVendorName}" 업체를 삭제하시겠습니까?`)) return;
+
+  const { error } = await db.from("vendors").delete().eq("id", vendorDelete_selectedVendorId);
+  if (error) {
+    alert("업체 삭제 실패: " + error.message + "\n연결된 자재가 있으면 삭제가 막힐 수 있습니다.");
+    return;
+  }
+
+  alert("업체 삭제 완료");
+  vendorDelete_selectedVendorId = null;
+  vendorDelete_selectedVendorName = "";
+  document.getElementById("vendorDelete_selected_vendor_name").value = "";
+  await vendorDelete_loadVendors();
+  await material_loadVendor();
+}
+
+/* =========================
+   발주처 담당자 삭제
+========================= */
+let requesterDelete_selectedId = null;
+let requesterDelete_selectedName = "";
+
+async function requesterDelete_loadContacts() {
+  const keyword = document.getElementById("requesterDelete_search_contact").value.trim();
+
+  let query = db
+    .from("requester_contacts")
+    .select("*")
+    .eq("company_name", "AK디자인")
+    .eq("is_active", true)
+    .order("contact_name", { ascending: true });
+
+  if (keyword) query = query.ilike("contact_name", `%${keyword}%`);
+
+  const { data, error } = await query;
+  if (error) {
+    alert("담당자 불러오기 실패: " + error.message);
+    return;
+  }
+
+  const body = document.getElementById("requesterDelete_body");
+  body.innerHTML = "";
+
+  data.forEach(row => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${row.contact_name ?? ""}</td>
+      <td>${row.contact_phone ?? ""}</td>
+      <td>${row.company_name ?? ""}</td>
+    `;
+    tr.onclick = () => {
+      document.querySelectorAll("#requesterDelete_body tr").forEach(x => x.classList.remove("selected"));
+      tr.classList.add("selected");
+      requesterDelete_selectedId = row.id;
+      requesterDelete_selectedName = row.contact_name ?? "";
+      document.getElementById("requesterDelete_selected_name").value = requesterDelete_selectedName;
+    };
+    body.appendChild(tr);
+  });
+}
+
+async function requesterDelete_delete() {
+  if (!requesterDelete_selectedId) {
+    alert("먼저 삭제할 담당자를 선택하세요.");
+    return;
+  }
+
+  if (!confirm(`정말로 "${requesterDelete_selectedName}" 담당자를 삭제하시겠습니까?`)) return;
+
+  const { error } = await db
+    .from("requester_contacts")
+    .delete()
+    .eq("id", requesterDelete_selectedId);
+
+  if (error) {
+    alert("담당자 삭제 실패: " + error.message);
+    return;
+  }
+
+  alert("담당자 삭제 완료");
+  requesterDelete_selectedId = null;
+  requesterDelete_selectedName = "";
+  document.getElementById("requesterDelete_selected_name").value = "";
+  await requesterDelete_loadContacts();
+  await material_loadRequesterList();
+  await purchase_loadRequesterContacts();
+}
+
+/* =========================
+   초기화
+========================= */
+async function initAll() {
+  await purchase_loadVendors();
+  await purchase_loadRequesterContacts();
+  purchase_newOrder();
+  await purchase_loadRecentOrders();
+
+  await material_loadRequesterList();
+  await material_loadVendor();
+  await material_loadMaterials();
+  await material_resetMaterialForm();
+
+  await receipt_loadRecent();
+  await vendorDelete_loadVendors();
+  await requesterDelete_loadContacts();
+
+  document.getElementById("purchase_vendor_select").addEventListener("change", async () => {
+    await purchase_loadVendorMaterials();
+    purchase_syncHeaderDisplay();
+  });
+  document.getElementById("purchase_requester_name_select").addEventListener("change", purchase_fillRequesterPhoneFromSelect);
+  document.getElementById("purchase_requester_name").addEventListener("input", purchase_syncHeaderDisplay);
+  document.getElementById("purchase_requester_phone").addEventListener("input", purchase_syncHeaderDisplay);
+  document.getElementById("purchase_site_address").addEventListener("input", purchase_syncHeaderDisplay);
+  document.getElementById("purchase_order_date").addEventListener("input", purchase_syncHeaderDisplay);
+  document.getElementById("purchase_arrival_date").addEventListener("input", purchase_syncHeaderDisplay);
+  document.getElementById("purchase_memo").addEventListener("input", purchase_syncHeaderDisplay);
+
+  purchase_setModeInfo();
+  purchase_syncHeaderDisplay();
+}
+
+window.addEventListener("load", async () => {
+  if (sessionStorage.getItem("ak_erp_login") === "ok") {
+    enterApp();
+    await initAll();
+  }
+});
+</script>
+
 </body>
 </html>
