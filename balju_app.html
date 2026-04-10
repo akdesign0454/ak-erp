@@ -7,163 +7,203 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-body {
-  font-family: sans-serif;
-  margin: 16px;
-  background: #f8f8f8;
-}
-input, select, button, textarea {
-  width: 100%;
-  padding: 10px;
-  margin: 6px 0;
-  font-size: 16px;
-  box-sizing: border-box;
-}
-.card {
-  background: #fff;
-  padding: 12px;
-  border-radius: 10px;
-  margin-bottom: 12px;
-  border: 1px solid #ddd;
-}
-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: #fff;
-}
-td, th {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: left;
-  font-size: 14px;
-}
-tr:hover {
-  background: #f1f7ff;
-  cursor: pointer;
-}
-.row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-.small {
-  font-size: 13px;
-  color: #666;
-}
-.table-wrap {
-  width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
+  * {
+    box-sizing: border-box;
+  }
 
-table {
-  width: 100%;
-  min-width: 700px;
-  border-collapse: collapse;
-}
-
-@media (max-width: 768px) {
   body {
-    padding: 12px;
+    font-family: sans-serif;
+    margin: 0;
+    padding: 16px;
+    background: #f8f8f8;
   }
 
-  .row,
-  .row3 {
-    grid-template-columns: 1fr !important;
+  .container {
+    max-width: 1080px;
+    margin: 0 auto;
   }
-}
+
+  input, select, button, textarea {
+    width: 100%;
+    padding: 10px;
+    margin: 6px 0;
+    font-size: 16px;
+    box-sizing: border-box;
+  }
+
+  .card {
+    background: #fff;
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    border: 1px solid #ddd;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .small {
+    font-size: 13px;
+    color: #666;
+  }
+
+  .table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+  }
+
+  .material-table {
+    min-width: 760px;
+  }
+
+  td, th {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+    font-size: 14px;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+
+  tr:hover {
+    background: #f1f7ff;
+    cursor: pointer;
+  }
+
+  h2 {
+    font-size: 22px;
+    margin: 0 0 12px 0;
+  }
+
+  h3 {
+    margin: 0 0 10px 0;
+  }
+
+  @media (max-width: 768px) {
+    body {
+      padding: 12px;
+    }
+
+    .row {
+      grid-template-columns: 1fr !important;
+    }
+
+    .container {
+      max-width: 100%;
+    }
+
+    .card {
+      padding: 10px;
+    }
+  }
 </style>
 </head>
 <body>
 
-<h2>발주처 담당자 관리 (AK디자인)</h2>
-<div class="card">
-  <div class="small">발주처 담당자를 저장해두면 발주서에서 선택해서 자동으로 전화번호가 나옵니다.</div>
+<div class="container">
 
-  <select id="requester_manage_select" onchange="loadRequesterToForm()">
-    <option value="">담당자 선택</option>
-  </select>
+  <h2>발주처 담당자 관리 (AK디자인)</h2>
+  <div class="card">
+    <div class="small">발주처 담당자를 저장해두면 발주서에서 선택 시 전화번호가 자동으로 들어갑니다.</div>
 
-  <input id="requester_contact_name" placeholder="발주처 담당자명">
-  <input id="requester_contact_phone" placeholder="발주처 전화번호">
+    <select id="requester_manage_select" onchange="loadRequesterToForm()">
+      <option value="">담당자 선택</option>
+    </select>
 
-  <div class="row">
-    <button onclick="saveRequesterContact()">발주처 담당자 신규 저장</button>
-    <button onclick="updateRequesterContact()">발주처 담당자 수정 저장</button>
+    <input id="requester_contact_name" placeholder="발주처 담당자명">
+    <input id="requester_contact_phone" placeholder="발주처 전화번호">
+
+    <div class="row">
+      <button onclick="saveRequesterContact()">발주처 담당자 신규 저장</button>
+      <button onclick="updateRequesterContact()">발주처 담당자 수정 저장</button>
+    </div>
+
+    <button onclick="resetRequesterForm()">발주처 담당자 입력 초기화</button>
   </div>
 
-  <button onclick="resetRequesterForm()">발주처 담당자 입력 초기화</button>
-</div>
+  <h2>업체 관리</h2>
+  <div class="card">
+    <div class="small">기존 업체를 선택하면 수정할 수 있습니다. 선택 없이 수정 저장을 누르면 업체명으로 기존 업체를 찾습니다.</div>
 
-<h2>업체 관리</h2>
-<div class="card">
-  <div class="small">기존 업체를 선택하면 수정할 수 있습니다. 선택 없이 수정 저장을 누르면 업체명으로 기존 업체를 찾습니다.</div>
+    <select id="vendor_manage_select" onchange="loadVendorToForm()">
+      <option value="">업체 선택</option>
+    </select>
 
-  <select id="vendor_manage_select" onchange="loadVendorToForm()">
-    <option value="">업체 선택</option>
-  </select>
+    <input id="vendor_name" placeholder="업체명">
+    <input id="vendor_contact_name" placeholder="수신처 담당자명">
+    <input id="vendor_contact_phone" placeholder="수신처 전화번호">
 
-  <input id="vendor_name" placeholder="업체명">
-  <input id="vendor_contact_name" placeholder="수신처 담당자명">
-  <input id="vendor_contact_phone" placeholder="수신처 전화번호">
+    <div class="row">
+      <button onclick="saveVendor()">업체 신규 저장</button>
+      <button onclick="updateVendor()">업체 수정 저장</button>
+    </div>
 
-  <div class="row">
-    <button onclick="saveVendor()">업체 신규 저장</button>
-    <button onclick="updateVendor()">업체 수정 저장</button>
+    <button onclick="resetVendorForm()">업체 입력 초기화</button>
   </div>
 
-  <button onclick="resetVendorForm()">업체 입력 초기화</button>
-</div>
+  <h2>자재 관리</h2>
+  <div class="card">
+    <select id="vendor_select">
+      <option value="">업체 선택</option>
+    </select>
 
-<h2>자재 관리</h2>
-<div class="card">
-  <select id="vendor_select">
-    <option value="">업체 선택</option>
-  </select>
+    <input id="item_code" readonly placeholder="자동코드">
+    <input id="item_name" placeholder="자재명">
+    <input id="spec" placeholder="규격">
+    <input id="unit" placeholder="단위">
+    <input id="stock_qty" readonly placeholder="현재고">
+    <textarea id="note" placeholder="비고"></textarea>
 
-  <input id="item_code" readonly placeholder="자동코드">
-  <input id="item_name" placeholder="자재명">
-  <input id="spec" placeholder="규격">
-  <input id="unit" placeholder="단위">
-  <input id="stock_qty" readonly placeholder="현재고">
-  <textarea id="note" placeholder="비고"></textarea>
+    <div class="row">
+      <button onclick="saveMaterial()">자재 저장</button>
+      <button onclick="updateMaterial()">자재 수정 저장</button>
+    </div>
 
-  <div class="row">
-    <button onclick="saveMaterial()">자재 저장</button>
-    <button onclick="updateMaterial()">자재 수정 저장</button>
+    <button onclick="resetMaterialForm()">자재 신규 입력</button>
   </div>
 
-  <button onclick="resetMaterialForm()">자재 신규 입력</button>
-</div>
+  <div class="card">
+    <h3>재고 변경</h3>
 
-<div class="card">
-  <h3>재고 변경</h3>
+    <select id="type">
+      <option value="IN">입고</option>
+      <option value="OUT">사용</option>
+      <option value="ADJUST">조정</option>
+    </select>
 
-  <select id="type">
-    <option value="IN">입고</option>
-    <option value="OUT">사용</option>
-    <option value="ADJUST">조정</option>
-  </select>
+    <input id="qty" type="number" placeholder="수량">
+    <button onclick="changeStock()">재고 반영</button>
+  </div>
 
-  <input id="qty" type="number" placeholder="수량">
-  <button onclick="changeStock()">재고 반영</button>
-</div>
+  <div class="card">
+    <h3>자재 목록</h3>
+    <div class="table-wrap">
+      <table class="material-table">
+        <thead>
+          <tr>
+            <th>업체</th>
+            <th>코드</th>
+            <th>자재명</th>
+            <th>규격</th>
+            <th>단위</th>
+            <th>재고</th>
+          </tr>
+        </thead>
+        <tbody id="body"></tbody>
+      </table>
+    </div>
+  </div>
 
-<div class="card">
-  <h3>자재 목록</h3>
-  <table>
-    <thead>
-      <tr>
-        <th>업체</th>
-        <th>코드</th>
-        <th>자재명</th>
-        <th>규격</th>
-        <th>단위</th>
-        <th>재고</th>
-      </tr>
-    </thead>
-    <tbody id="body"></tbody>
-  </table>
 </div>
 
 <script>
@@ -285,12 +325,12 @@ async function updateRequesterContact() {
     }
 
     if (!foundRows || foundRows.length === 0) {
-      alert("수정할 기존 발주처 담당자를 찾지 못했습니다.\n담당자를 먼저 선택하거나 이름을 정확히 입력하세요.");
+      alert("수정할 기존 발주처 담당자를 찾지 못했습니다. 담당자를 먼저 선택하거나 이름을 정확히 입력하세요.");
       return;
     }
 
     if (foundRows.length > 1) {
-      alert("같은 담당자명이 여러 개 있습니다.\n드롭다운에서 담당자를 먼저 선택한 뒤 수정하세요.");
+      alert("같은 담당자명이 여러 개 있습니다. 드롭다운에서 담당자를 먼저 선택한 뒤 수정하세요.");
       return;
     }
 
@@ -391,11 +431,13 @@ async function saveVendor() {
     return;
   }
 
-  const { error } = await db.from("vendors").insert([{
-    vendor_name,
-    vendor_contact_name,
-    vendor_contact_phone
-  }]);
+  const { error } = await db
+    .from("vendors")
+    .insert([{
+      vendor_name,
+      vendor_contact_name,
+      vendor_contact_phone
+    }]);
 
   if (error) {
     alert("업체 저장 실패: " + error.message);
@@ -431,12 +473,12 @@ async function updateVendor() {
     }
 
     if (!foundRows || foundRows.length === 0) {
-      alert("수정할 기존 업체를 찾지 못했습니다.\n업체를 먼저 선택하거나 업체명을 정확히 입력하세요.");
+      alert("수정할 기존 업체를 찾지 못했습니다. 업체를 먼저 선택하거나 업체명을 정확히 입력하세요.");
       return;
     }
 
     if (foundRows.length > 1) {
-      alert("같은 업체명이 여러 개 있습니다.\n드롭다운에서 업체를 먼저 선택한 뒤 수정하세요.");
+      alert("같은 업체명이 여러 개 있습니다. 드롭다운에서 업체를 먼저 선택한 뒤 수정하세요.");
       return;
     }
 
@@ -446,7 +488,8 @@ async function updateVendor() {
   const ok = confirm("선택한 업체 정보를 수정 저장하시겠습니까?");
   if (!ok) return;
 
-  const { error } = await db.from("vendors")
+  const { error } = await db
+    .from("vendors")
     .update({
       vendor_name,
       vendor_contact_name,
@@ -511,15 +554,17 @@ async function saveMaterial() {
     return;
   }
 
-  const { error } = await db.from("materials").insert([{
-    vendor_id,
-    item_code,
-    item_name,
-    spec,
-    unit,
-    stock_qty: 0,
-    note
-  }]);
+  const { error } = await db
+    .from("materials")
+    .insert([{
+      vendor_id,
+      item_code,
+      item_name,
+      spec,
+      unit,
+      stock_qty: 0,
+      note
+    }]);
 
   if (error) {
     alert("자재 저장 실패: " + error.message);
@@ -553,7 +598,8 @@ async function updateMaterial() {
     return;
   }
 
-  const { error } = await db.from("materials")
+  const { error } = await db
+    .from("materials")
     .update({
       vendor_id,
       item_name,
@@ -604,7 +650,8 @@ async function changeStock() {
   if (type === "OUT") stock -= qty;
   if (type === "ADJUST") stock = qty;
 
-  const { error } = await db.from("materials")
+  const { error } = await db
+    .from("materials")
     .update({ stock_qty: stock })
     .eq("id", selectedMaterial.id);
 
@@ -666,5 +713,6 @@ async function init() {
 
 init();
 </script>
+
 </body>
 </html>
