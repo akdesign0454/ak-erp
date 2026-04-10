@@ -69,7 +69,7 @@
 
   table {
     width: 100%;
-    min-width: 700px;
+    min-width: 560px;
     border-collapse: collapse;
     background: #fff;
   }
@@ -159,14 +159,6 @@
     margin-right: 6px;
   }
 
-  .screen-only {
-    display: inline;
-  }
-
-  .print-only-inline {
-    display: none;
-  }
-
   .print-only {
     display: none;
   }
@@ -189,7 +181,7 @@
     }
 
     table {
-      min-width: 640px;
+      min-width: 520px;
     }
   }
 
@@ -246,14 +238,6 @@
 
     .print-only {
       display: block !important;
-    }
-
-    .screen-only {
-      display: none !important;
-    }
-
-    .print-only-inline {
-      display: inline !important;
     }
 
     .party-box {
@@ -374,9 +358,7 @@
     <table>
       <thead>
         <tr>
-          <th>코드</th>
           <th>자재명</th>
-          <th>규격</th>
           <th>단위</th>
           <th>현재고</th>
         </tr>
@@ -392,22 +374,16 @@
   <div class="table-wrap">
     <table>
       <colgroup>
-        <col style="width: 5%;">
-        <col style="width: 35%;">
-        <col style="width: 12%;">
-        <col style="width: 7%;">
-        <col style="width: 7%;">
-        <col style="width: 22%;">
-        <col class="no-print" style="width: 12%;">
+        <col style="width: 45%;">
+        <col style="width: 15%;">
+        <col style="width: 15%;">
+        <col class="no-print" style="width: 25%;">
       </colgroup>
       <thead>
         <tr>
-          <th id="itemHeaderTitle">코드</th>
           <th>자재명</th>
-          <th>규격</th>
           <th>단위</th>
           <th>수량</th>
-          <th>비고</th>
           <th class="no-print">삭제</th>
         </tr>
       </thead>
@@ -653,9 +629,7 @@ async function loadVendorMaterials() {
     const tr = document.createElement("tr");
     tr.className = "clickable";
     tr.innerHTML = `
-      <td>${row.item_code ?? ""}</td>
       <td>${row.item_name ?? ""}</td>
-      <td>${row.spec ?? ""}</td>
       <td>${row.unit ?? ""}</td>
       <td>${row.stock_qty ?? 0}</td>
     `;
@@ -674,12 +648,9 @@ function addOrderItem(row) {
   } else {
     orderItems.push({
       material_id: row.id,
-      item_code_snapshot: row.item_code ?? "",
       item_name_snapshot: row.item_name ?? "",
-      spec_snapshot: row.spec ?? "",
       unit_snapshot: row.unit ?? "",
-      order_qty: 1,
-      line_note: ""
+      order_qty: 1
     });
   }
 
@@ -696,10 +667,6 @@ function updateQty(index, value) {
   orderItems[index].order_qty = qty < 0 ? 0 : qty;
 }
 
-function updateLineNote(index, value) {
-  orderItems[index].line_note = value;
-}
-
 function renderOrderItems() {
   const body = document.getElementById("orderItemBody");
   body.innerHTML = "";
@@ -707,20 +674,11 @@ function renderOrderItems() {
   orderItems.forEach((row, index) => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>
-        <span class="screen-only">${row.item_code_snapshot ?? ""}</span>
-        <span class="print-only-inline">${index + 1}</span>
-      </td>
       <td>${row.item_name_snapshot ?? ""}</td>
-      <td>${row.spec_snapshot ?? ""}</td>
       <td>${row.unit_snapshot ?? ""}</td>
       <td>
         <input type="number" min="0" value="${row.order_qty ?? 0}"
           oninput="updateQty(${index}, this.value)">
-      </td>
-      <td>
-        <input type="text" value="${row.line_note ?? ""}"
-          oninput="updateLineNote(${index}, this.value)">
       </td>
       <td class="no-print">
         <button onclick="removeOrderItem(${index})">삭제</button>
@@ -780,19 +738,16 @@ async function saveOrder() {
     .single();
 
   if (orderError) {
-    alert("발주 저장 실패: " + error.message);
+    alert("발주 저장 실패: " + orderError.message);
     return;
   }
 
   const itemRows = validItems.map(x => ({
     purchase_list_id: orderData.id,
     material_id: x.material_id,
-    item_code_snapshot: x.item_code_snapshot,
     item_name_snapshot: x.item_name_snapshot,
-    spec_snapshot: x.spec_snapshot,
     unit_snapshot: x.unit_snapshot,
     order_qty: x.order_qty,
-    line_note: x.line_note,
     updated_at: new Date().toISOString()
   }));
 
@@ -849,12 +804,9 @@ async function updateOrder() {
   const itemRows = validItems.map(x => ({
     purchase_list_id: loadedOrderId,
     material_id: x.material_id,
-    item_code_snapshot: x.item_code_snapshot,
     item_name_snapshot: x.item_name_snapshot,
-    spec_snapshot: x.spec_snapshot,
     unit_snapshot: x.unit_snapshot,
     order_qty: x.order_qty,
-    line_note: x.line_note,
     updated_at: new Date().toISOString()
   }));
 
@@ -965,12 +917,9 @@ async function loadOrderDetail(orderId) {
 
   orderItems = (items || []).map(x => ({
     material_id: x.material_id,
-    item_code_snapshot: x.item_code_snapshot,
-    item_name_snapshot: x.item_name_snapshot,
-    spec_snapshot: x.spec_snapshot,
-    unit_snapshot: x.unit_snapshot,
-    order_qty: Number(x.order_qty || 0),
-    line_note: x.line_note ?? ""
+    item_name_snapshot: x.item_name_snapshot ?? "",
+    unit_snapshot: x.unit_snapshot ?? "",
+    order_qty: Number(x.order_qty || 0)
   }));
 
   renderOrderItems();
@@ -985,21 +934,13 @@ async function loadOrderDetail(orderId) {
 
 function applyPrintMode() {
   const title = document.getElementById("printMainTitle");
-  const header = document.getElementById("itemHeaderTitle");
   title.textContent = loadedMode === "loaded" ? "수정발주" : "신규발주";
-  header.textContent = "No";
   syncHeaderDisplay();
-}
-
-function restoreScreenMode() {
-  const header = document.getElementById("itemHeaderTitle");
-  if (header) header.textContent = "코드";
 }
 
 function printPdf() {
   applyPrintMode();
   window.print();
-  setTimeout(() => restoreScreenMode(), 300);
 }
 
 async function init() {
