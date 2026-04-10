@@ -144,7 +144,38 @@ table {
 
   <textarea id="memo" class="no-print" placeholder="비고"></textarea>
 </div>
+<div class="party-box">
+    <div class="party-line">
+      <div><span class="label">수신처 :</span><span id="vendorNameText">업체 미선택</span></div>
+      <div><span class="label">담당자 :</span><span id="vendorContactNameText">-</span></div>
+      <div><span class="label">전화번호 :</span><span id="vendorContactPhoneText">-</span></div>
+    </div>
+    <div class="party-line">
+      <div><span class="label">발주처 :</span><span id="requesterCompanyText">AK디자인</span></div>
+      <div><span class="label">담당자 :</span><span id="requesterNameText">-</span></div>
+      <div><span class="label">전화번호 :</span><span id="requesterPhoneText">-</span></div>
+    </div>
+  </div>
+
+  <div class="print-info-box">
+    <div class="print-info-line print-address-line" id="siteAddressLineWrap">
+      <span class="label">현장주소 :</span>
+      <span id="siteAddressText">-</span>
+    </div>
+
+    <div class="print-info-grid">
+      <div>
+        <span class="label">발주일 :</span>
+        <span id="orderDateText">-</span>
+      </div>
+      <div>
+        <span class="label">자재도착일 :</span>
+        <span id="arrivalDateText">-</span>
+      </div>
+    </div>
+  
   <select id="vendor_select"></select>
+
  <div class="party-box">
     <div class="party-line">
       <div><span class="label">수신처 :</span><span id="vendorNameText">업체 미선택</span></div>
