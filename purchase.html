@@ -317,7 +317,1037 @@ function syncHeaderDisplay() {
   document.getElementById("requesterNameText").textContent = requesterName;
   document.getElementById("requesterPhoneText").textContent = requesterPhone;
 
+  document.getEleme<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>발주서 작성 / 조회 / 수정 / 재출력</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: sans-serif;
+    margin: 0;
+    padding: 16px;
+    background: #f8f8f8;
+  }
+
+  .container {
+    max-width: 1080px;
+    margin: 0 auto;
+  }
+
+  input, select, button, textarea {
+    width: 100%;
+    padding: 10px;
+    margin: 6px 0;
+    font-size: 16px;
+    box-sizing: border-box;
+  }
+
+  .card {
+    background: #fff;
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    border: 1px solid #ddd;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .row3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+
+  .btn-group-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .btn-group-4 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    width: 100%;
+    min-width: 700px;
+    border-collapse: collapse;
+    background: #fff;
+  }
+
+  th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+    font-size: 14px;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+
+  tr.clickable:hover {
+    background: #f1f7ff;
+    cursor: pointer;
+  }
+
+  .small {
+    font-size: 13px;
+    color: #666;
+  }
+
+  .status-box {
+    background: #f3f3f3;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 8px;
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+
+  .section-title {
+    margin-top: 0;
+    margin-bottom: 8px;
+  }
+
+  .print-title-box {
+    margin-bottom: 16px;
+  }
+
+  .print-main-title {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 12px;
+  }
+
+  .party-box {
+    border: 1px solid #ddd;
+    padding: 10px;
+    margin-top: 12px;
+    margin-bottom: 10px;
+    line-height: 1.8;
+  }
+
+  .party-line {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    font-size: 15px;
+  }
+
+  .print-info-box {
+    margin-top: 12px;
+    line-height: 1.8;
+  }
+
+  .print-info-line {
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+
+  .print-address-line {
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .print-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 6px 0;
+  }
+
+  .label {
+    font-weight: bold;
+    margin-right: 6px;
+  }
+
+  .screen-only {
+    display: inline;
+  }
+
+  .print-only-inline {
+    display: none;
+  }
+
+  .print-only {
+    display: none;
+  }
+
+  @media (max-width: 768px) {
+    body {
+      padding: 12px;
+    }
+
+    .row,
+    .row3,
+    .btn-group-2,
+    .btn-group-4,
+    .print-info-grid {
+      grid-template-columns: 1fr !important;
+    }
+
+    .party-line {
+      gap: 10px;
+    }
+
+    table {
+      min-width: 640px;
+    }
+  }
+
+  @media print {
+    .no-print {
+      display: none !important;
+    }
+
+    body {
+      background: #fff;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: none;
+    }
+
+    .card {
+      border: none;
+      padding: 0;
+      margin-bottom: 12px;
+      box-shadow: none;
+      background: #fff;
+    }
+
+    .table-wrap {
+      overflow: visible;
+    }
+
+    table {
+      min-width: 0;
+      width: 100%;
+    }
+
+    input, select, textarea {
+      border: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      background: transparent !important;
+      appearance: none;
+      -webkit-appearance: none;
+      font-size: 14px;
+      outline: none;
+    }
+
+    button {
+      display: none !important;
+    }
+
+    .screen-title {
+      display: none !important;
+    }
+
+    .print-only {
+      display: block !important;
+    }
+
+    .screen-only {
+      display: none !important;
+    }
+
+    .print-only-inline {
+      display: inline !important;
+    }
+
+    .party-box {
+      border: none;
+      padding: 0;
+      margin-bottom: 12px;
+    }
+
+    #vendor_select,
+    #requester_company,
+    #requester_name_select,
+    #requester_name,
+    #requester_phone,
+    #site_name,
+    #site_address,
+    #order_date,
+    #arrival_date,
+    #memo {
+      display: none !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<h2 class="screen-title">발주서 작성 / 조회 / 수정 / 재출력</h2>
+
+<div id="printTitleBox" class="print-only print-title-box">
+  <div id="printMainTitle" class="print-main-title">신규발주</div>
+</div>
+
+<div class="card no-print">
+  <h3 class="section-title">현재 상태</h3>
+  <div class="status-box" id="modeInfo">신규 작성 모드</div>
+</div>
+
+<div class="card">
+  <h3 class="section-title">발주 기본정보</h3>
+
+  <input id="order_no" readonly placeholder="발주번호 자동생성">
+
+  <select id="vendor_select"></select>
+
+  <div class="no-print">
+    <div class="row">
+      <input id="requester_company" readonly value="AK디자인" placeholder="발주처">
+      <select id="requester_name_select"></select>
+    </div>
+
+    <div class="row">
+      <input id="requester_name" placeholder="발주처 담당자명">
+      <input id="requester_phone" placeholder="발주처 전화번호">
+    </div>
+  </div>
+
+  <div class="row no-print">
+    <input id="site_name" placeholder="현장명">
+    <input id="site_address" placeholder="현장주소">
+  </div>
+
+  <div class="row no-print">
+    <div>
+      <label>발주일</label>
+      <input id="order_date" type="date">
+    </div>
+    <div>
+      <label>자재도착일</label>
+      <input id="arrival_date" type="date">
+    </div>
+  </div>
+
+  <textarea id="memo" class="no-print" placeholder="비고"></textarea>
+
+  <div class="party-box">
+    <div class="party-line">
+      <div><span class="label">수신처 :</span><span id="vendorNameText">업체 미선택</span></div>
+      <div><span class="label">담당자 :</span><span id="vendorContactNameText">-</span></div>
+      <div><span class="label">전화번호 :</span><span id="vendorContactPhoneText">-</span></div>
+    </div>
+    <div class="party-line">
+      <div><span class="label">발주처 :</span><span id="requesterCompanyText">AK디자인</span></div>
+      <div><span class="label">담당자 :</span><span id="requesterNameText">-</span></div>
+      <div><span class="label">전화번호 :</span><span id="requesterPhoneText">-</span></div>
+    </div>
+  </div>
+
+  <div class="print-info-box">
+    <div class="print-info-line print-address-line" id="siteAddressLineWrap">
+      <span class="label">현장주소 :</span>
+      <span id="siteAddressText">-</span>
+    </div>
+
+    <div class="print-info-grid">
+      <div>
+        <span class="label">발주일 :</span>
+        <span id="orderDateText">-</span>
+      </div>
+      <div>
+        <span class="label">자재도착일 :</span>
+        <span id="arrivalDateText">-</span>
+      </div>
+    </div>
+
+    <div class="print-info-line">
+      <span class="label">비고 :</span>
+      <span id="memoText">-</span>
+    </div>
+  </div>
+</div>
+
+<div class="card no-print">
+  <h3 class="section-title">업체 자재 목록</h3>
+  <div class="small">업체 선택 시 해당 업체 자재만 표시됩니다. 자재 행을 누르면 발주목록에 추가됩니다.</div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>코드</th>
+          <th>자재명</th>
+          <th>규격</th>
+          <th>단위</th>
+          <th>현재고</th>
+        </tr>
+      </thead>
+      <tbody id="materialBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <h3 class="section-title">발주 항목</h3>
+
+  <div class="table-wrap">
+    <table>
+      <colgroup>
+        <col style="width: 5%;">
+        <col style="width: 35%;">
+        <col style="width: 12%;">
+        <col style="width: 7%;">
+        <col style="width: 7%;">
+        <col style="width: 22%;">
+        <col class="no-print" style="width: 12%;">
+      </colgroup>
+      <thead>
+        <tr>
+          <th id="itemHeaderTitle">코드</th>
+          <th>자재명</th>
+          <th>규격</th>
+          <th>단위</th>
+          <th>수량</th>
+          <th>비고</th>
+          <th class="no-print">삭제</th>
+        </tr>
+      </thead>
+      <tbody id="orderItemBody"></tbody>
+    </table>
+  </div>
+
+  <div class="no-print" style="margin-top:12px;">
+    <div class="btn-group-4">
+      <button onclick="newOrder()">신규 저장용 새 발주</button>
+      <button onclick="saveOrder()">신규 저장</button>
+      <button onclick="updateOrder()">수정 저장</button>
+      <button onclick="printPdf()">PDF 저장</button>
+    </div>
+    <button onclick="loadRecentOrders()">최근 발주</button>
+  </div>
+</div>
+
+<div class="card no-print">
+  <h3 class="section-title">발주 조회</h3>
+
+  <div class="row3">
+    <input id="search_order_no" placeholder="발주번호 검색">
+    <input id="search_vendor_name" placeholder="업체명 검색">
+    <input id="search_site_name" placeholder="현장명 검색">
+  </div>
+
+  <div class="btn-group-2">
+    <button onclick="searchOrders()">조회</button>
+    <button onclick="clearSearchInputs()">검색칸 지우기</button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>발주번호</th>
+          <th>업체명</th>
+          <th>현장명</th>
+          <th>발주일</th>
+          <th>도착일</th>
+        </tr>
+      </thead>
+      <tbody id="orderSearchBody"></tbody>
+    </table>
+  </div>
+</div>
+
+</div>
+
+<script>
+const url = "https://gmqjbkqttkkotvvjnsiz.supabase.co";
+const key = "sb_publishable_NGNO5UWtbkgCWQQ6jwTe6Q_4evcuVD9";
+const db = supabase.createClient(url, key);
+
+let orderItems = [];
+let loadedOrderId = null;
+let loadedMode = "new";
+let currentVendorContactName = "";
+let currentVendorContactPhone = "";
+
+function todayString() {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function orderNoString() {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mi = String(d.getMinutes()).padStart(2, "0");
+  const ss = String(d.getSeconds()).padStart(2, "0");
+  return `PO-${yyyy}${mm}${dd}-${hh}${mi}${ss}`;
+}
+
+function setModeInfo() {
+  const box = document.getElementById("modeInfo");
+  if (loadedMode === "loaded" && loadedOrderId) {
+    box.textContent = `불러온 발주 수정 모드 / 재출력 가능 / 발주ID: ${loadedOrderId}`;
+  } else {
+    box.textContent = "신규 작성 모드";
+  }
+}
+
+function syncHeaderDisplay() {
+  const vendorSelect = document.getElementById("vendor_select");
+  const vendorName = vendorSelect.selectedOptions[0]?.text || "업체 미선택";
+  const requesterCompany = document.getElementById("requester_company").value || "AK디자인";
+  const requesterName = document.getElementById("requester_name").value || "-";
+  const requesterPhone = document.getElementById("requester_phone").value || "-";
+  const siteAddress = document.getElementById("site_address").value || "-";
+  const orderDate = document.getElementById("order_date").value || "-";
+  const arrivalDate = document.getElementById("arrival_date").value || "-";
+  const memo = document.getElementById("memo").value || "-";
+
+  document.getElementById("vendorNameText").textContent = vendorName;
+  document.getElementById("vendorContactNameText").textContent = currentVendorContactName || "-";
+  document.getElementById("vendorContactPhoneText").textContent = currentVendorContactPhone || "-";
+
+  document.getElementById("requesterCompanyText").textContent = requesterCompany;
+  document.getElementById("requesterNameText").textContent = requesterName;
+  document.getElementById("requesterPhoneText").textContent = requesterPhone;
+
   document.getElementById("siteAddressText").textContent = siteAddress;
+  document.getElementById("orderDateText").textContent = orderDate;
+  document.getElementById("arrivalDateText").textContent = arrivalDate;
+  document.getElementById("memoText").textContent = memo;
+
+  document.getElementById("siteAddressLineWrap").style.display = siteAddress === "-" ? "none" : "block";
+}
+
+function clearHeaderInputs() {
+  currentVendorContactName = "";
+  currentVendorContactPhone = "";
+
+  document.getElementById("order_no").value = "";
+  document.getElementById("vendor_select").value = "";
+  document.getElementById("requester_company").value = "AK디자인";
+  document.getElementById("requester_name_select").value = "";
+  document.getElementById("requester_name").value = "";
+  document.getElementById("requester_phone").value = "";
+  document.getElementById("site_name").value = "";
+  document.getElementById("site_address").value = "";
+  document.getElementById("order_date").value = todayString();
+  document.getElementById("arrival_date").value = "";
+  document.getElementById("memo").value = "";
+  syncHeaderDisplay();
+}
+
+function clearSearchInputs() {
+  document.getElementById("search_order_no").value = "";
+  document.getElementById("search_vendor_name").value = "";
+  document.getElementById("search_site_name").value = "";
+}
+
+function newOrder() {
+  loadedOrderId = null;
+  loadedMode = "new";
+  orderItems = [];
+  clearHeaderInputs();
+  document.getElementById("order_no").value = orderNoString();
+  renderOrderItems();
+  document.getElementById("materialBody").innerHTML = "";
+  setModeInfo();
+  syncHeaderDisplay();
+}
+
+async function loadVendors() {
+  const { data, error } = await db
+    .from("vendors")
+    .select("*")
+    .order("vendor_name", { ascending: true });
+
+  if (error) {
+    alert("업체 불러오기 실패: " + error.message);
+    return;
+  }
+
+  const sel = document.getElementById("vendor_select");
+  sel.innerHTML = '<option value="">업체 선택</option>';
+
+  data.forEach(v => {
+    sel.innerHTML += `<option value="${v.id}">${v.vendor_name}</option>`;
+  });
+}
+
+async function loadRequesterContacts() {
+  const { data, error } = await db
+    .from("requester_contacts")
+    .select("*")
+    .eq("company_name", "AK디자인")
+    .eq("is_active", true)
+    .order("contact_name", { ascending: true });
+
+  if (error) {
+    alert("발주처 담당자 불러오기 실패: " + error.message);
+    return;
+  }
+
+  const sel = document.getElementById("requester_name_select");
+  sel.innerHTML = '<option value="">담당자 선택</option>';
+
+  data.forEach(row => {
+    sel.innerHTML += `<option value="${row.id}" data-phone="${row.contact_phone}">${row.contact_name}</option>`;
+  });
+}
+
+function fillRequesterPhoneFromSelect() {
+  const sel = document.getElementById("requester_name_select");
+  const option = sel.selectedOptions[0];
+
+  if (!option || !sel.value) {
+    document.getElementById("requester_name").value = "";
+    document.getElementById("requester_phone").value = "";
+    syncHeaderDisplay();
+    return;
+  }
+
+  document.getElementById("requester_name").value = option.textContent || "";
+  document.getElementById("requester_phone").value = option.getAttribute("data-phone") || "";
+  syncHeaderDisplay();
+}
+
+async function loadVendorMaterials() {
+  const vendorId = document.getElementById("vendor_select").value;
+  const body = document.getElementById("materialBody");
+  body.innerHTML = "";
+
+  currentVendorContactName = "";
+  currentVendorContactPhone = "";
+  syncHeaderDisplay();
+
+  if (!vendorId) return;
+
+  const { data: vendorRow, error: vendorError } = await db
+    .from("vendors")
+    .select("vendor_contact_name, vendor_contact_phone")
+    .eq("id", vendorId)
+    .single();
+
+  if (!vendorError && vendorRow) {
+    currentVendorContactName = vendorRow.vendor_contact_name || "";
+    currentVendorContactPhone = vendorRow.vendor_contact_phone || "";
+  }
+
+  const { data, error } = await db
+    .from("materials")
+    .select("*")
+    .eq("vendor_id", vendorId)
+    .order("item_name", { ascending: true });
+
+  if (error) {
+    alert("자재 불러오기 실패: " + error.message);
+    return;
+  }
+
+  data.forEach(row => {
+    const tr = document.createElement("tr");
+    tr.className = "clickable";
+    tr.innerHTML = `
+      <td>${row.item_code ?? ""}</td>
+      <td>${row.item_name ?? ""}</td>
+      <td>${row.spec ?? ""}</td>
+      <td>${row.unit ?? ""}</td>
+      <td>${row.stock_qty ?? 0}</td>
+    `;
+    tr.onclick = () => addOrderItem(row);
+    body.appendChild(tr);
+  });
+
+  syncHeaderDisplay();
+}
+
+function addOrderItem(row) {
+  const foundIndex = orderItems.findIndex(x => x.material_id === row.id);
+
+  if (foundIndex >= 0) {
+    orderItems[foundIndex].order_qty += 1;
+  } else {
+    orderItems.push({
+      material_id: row.id,
+      item_code_snapshot: row.item_code ?? "",
+      item_name_snapshot: row.item_name ?? "",
+      spec_snapshot: row.spec ?? "",
+      unit_snapshot: row.unit ?? "",
+      order_qty: 1,
+      line_note: ""
+    });
+  }
+
+  renderOrderItems();
+}
+
+function removeOrderItem(index) {
+  orderItems.splice(index, 1);
+  renderOrderItems();
+}
+
+function updateQty(index, value) {
+  const qty = Number(value || 0);
+  orderItems[index].order_qty = qty < 0 ? 0 : qty;
+}
+
+function updateLineNote(index, value) {
+  orderItems[index].line_note = value;
+}
+
+function renderOrderItems() {
+  const body = document.getElementById("orderItemBody");
+  body.innerHTML = "";
+
+  orderItems.forEach((row, index) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>
+        <span class="screen-only">${row.item_code_snapshot ?? ""}</span>
+        <span class="print-only-inline">${index + 1}</span>
+      </td>
+      <td>${row.item_name_snapshot ?? ""}</td>
+      <td>${row.spec_snapshot ?? ""}</td>
+      <td>${row.unit_snapshot ?? ""}</td>
+      <td>
+        <input type="number" min="0" value="${row.order_qty ?? 0}"
+          oninput="updateQty(${index}, this.value)">
+      </td>
+      <td>
+        <input type="text" value="${row.line_note ?? ""}"
+          oninput="updateLineNote(${index}, this.value)">
+      </td>
+      <td class="no-print">
+        <button onclick="removeOrderItem(${index})">삭제</button>
+      </td>
+    `;
+    body.appendChild(tr);
+  });
+}
+
+function getHeaderFormData() {
+  const vendorSelect = document.getElementById("vendor_select");
+
+  return {
+    order_no: document.getElementById("order_no").value.trim(),
+    vendor_id: vendorSelect.value || null,
+    vendor_name: vendorSelect.selectedOptions[0]?.text || "",
+    vendor_contact_name: currentVendorContactName || "",
+    vendor_contact_phone: currentVendorContactPhone || "",
+    requester_company: "AK디자인",
+    requester_name: document.getElementById("requester_name").value.trim(),
+    requester_phone: document.getElementById("requester_phone").value.trim(),
+    site_name: document.getElementById("site_name").value.trim(),
+    site_address: document.getElementById("site_address").value.trim(),
+    order_date: document.getElementById("order_date").value,
+    arrival_date: document.getElementById("arrival_date").value,
+    memo: document.getElementById("memo").value.trim()
+  };
+}
+
+function validateOrderData(formData) {
+  if (!formData.order_no) return alert("발주번호를 먼저 생성하세요."), false;
+  if (!formData.vendor_id) return alert("업체를 선택하세요."), false;
+  if (!formData.requester_name || !formData.requester_phone) return alert("발주처 담당자와 전화번호를 입력하세요."), false;
+  if (orderItems.length === 0) return alert("발주 항목을 한 개 이상 추가하세요."), false;
+
+  const validItems = orderItems.filter(x => Number(x.order_qty) > 0);
+  if (validItems.length === 0) return alert("수량이 0보다 큰 항목이 필요합니다."), false;
+
+  return true;
+}
+
+async function saveOrder() {
+  if (loadedMode === "loaded") {
+    alert("현재 불러온 발주입니다. 신규 저장이 아니라 수정 저장을 사용하세요.");
+    return;
+  }
+
+  const formData = getHeaderFormData();
+  if (!validateOrderData(formData)) return;
+
+  const validItems = orderItems.filter(x => Number(x.order_qty) > 0);
+
+  const { data: orderData, error: orderError } = await db
+    .from("purchase_lists")
+    .insert([{ ...formData, updated_at: new Date().toISOString() }])
+    .select()
+    .single();
+
+  if (orderError) {
+    alert("발주 저장 실패: " + error.message);
+    return;
+  }
+
+  const itemRows = validItems.map(x => ({
+    purchase_list_id: orderData.id,
+    material_id: x.material_id,
+    item_code_snapshot: x.item_code_snapshot,
+    item_name_snapshot: x.item_name_snapshot,
+    spec_snapshot: x.spec_snapshot,
+    unit_snapshot: x.unit_snapshot,
+    order_qty: x.order_qty,
+    line_note: x.line_note,
+    updated_at: new Date().toISOString()
+  }));
+
+  const { error: itemError } = await db
+    .from("purchase_list_items")
+    .insert(itemRows);
+
+  if (itemError) {
+    alert("발주 상세 저장 실패: " + itemError.message);
+    return;
+  }
+
+  alert("발주 저장 완료");
+  loadedOrderId = orderData.id;
+  loadedMode = "loaded";
+  setModeInfo();
+  await loadRecentOrders();
+}
+
+async function updateOrder() {
+  if (!loadedOrderId) {
+    alert("먼저 조회해서 불러온 발주만 수정 저장할 수 있습니다.");
+    return;
+  }
+
+  const confirmResult = confirm("정말 수정 저장하시겠습니까?\n기존 발주 상세내역은 현재 화면 내용으로 교체됩니다.");
+  if (!confirmResult) return;
+
+  const formData = getHeaderFormData();
+  if (!validateOrderData(formData)) return;
+
+  const validItems = orderItems.filter(x => Number(x.order_qty) > 0);
+
+  const { error: headerError } = await db
+    .from("purchase_lists")
+    .update({ ...formData, updated_at: new Date().toISOString() })
+    .eq("id", loadedOrderId);
+
+  if (headerError) {
+    alert("발주 헤더 수정 실패: " + headerError.message);
+    return;
+  }
+
+  const { error: deleteError } = await db
+    .from("purchase_list_items")
+    .delete()
+    .eq("purchase_list_id", loadedOrderId);
+
+  if (deleteError) {
+    alert("기존 발주 상세 삭제 실패: " + deleteError.message);
+    return;
+  }
+
+  const itemRows = validItems.map(x => ({
+    purchase_list_id: loadedOrderId,
+    material_id: x.material_id,
+    item_code_snapshot: x.item_code_snapshot,
+    item_name_snapshot: x.item_name_snapshot,
+    spec_snapshot: x.spec_snapshot,
+    unit_snapshot: x.unit_snapshot,
+    order_qty: x.order_qty,
+    line_note: x.line_note,
+    updated_at: new Date().toISOString()
+  }));
+
+  const { error: insertError } = await db
+    .from("purchase_list_items")
+    .insert(itemRows);
+
+  if (insertError) {
+    alert("수정 상세 저장 실패: " + insertError.message);
+    return;
+  }
+
+  alert("수정 저장 완료");
+  await loadRecentOrders();
+}
+
+async function loadRecentOrders() {
+  const { data, error } = await db
+    .from("purchase_lists")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(30);
+
+  if (error) {
+    alert("최근 발주 조회 실패: " + error.message);
+    return;
+  }
+
+  renderSearchOrders(data || []);
+}
+
+async function searchOrders() {
+  const searchOrderNo = document.getElementById("search_order_no").value.trim();
+  const searchVendorName = document.getElementById("search_vendor_name").value.trim();
+  const searchSiteName = document.getElementById("search_site_name").value.trim();
+
+  let query = db.from("purchase_lists").select("*").order("created_at", { ascending: false }).limit(100);
+  if (searchOrderNo) query = query.ilike("order_no", `%${searchOrderNo}%`);
+  if (searchVendorName) query = query.ilike("vendor_name", `%${searchVendorName}%`);
+  if (searchSiteName) query = query.ilike("site_name", `%${searchSiteName}%`);
+
+  const { data, error } = await query;
+  if (error) {
+    alert("발주 조회 실패: " + error.message);
+    return;
+  }
+
+  renderSearchOrders(data || []);
+}
+
+function renderSearchOrders(rows) {
+  const body = document.getElementById("orderSearchBody");
+  body.innerHTML = "";
+
+  rows.forEach(row => {
+    const tr = document.createElement("tr");
+    tr.className = "clickable";
+    tr.innerHTML = `
+      <td>${row.order_no ?? ""}</td>
+      <td>${row.vendor_name ?? ""}</td>
+      <td>${row.site_name ?? ""}</td>
+      <td>${row.order_date ?? ""}</td>
+      <td>${row.arrival_date ?? ""}</td>
+    `;
+    tr.onclick = () => loadOrderDetail(row.id);
+    body.appendChild(tr);
+  });
+}
+
+async function loadOrderDetail(orderId) {
+  const { data: header, error: headerError } = await db
+    .from("purchase_lists")
+    .select("*")
+    .eq("id", orderId)
+    .single();
+
+  if (headerError) {
+    alert("발주 헤더 불러오기 실패: " + headerError.message);
+    return;
+  }
+
+  const { data: items, error: itemsError } = await db
+    .from("purchase_list_items")
+    .select("*")
+    .eq("purchase_list_id", orderId)
+    .order("created_at", { ascending: true });
+
+  if (itemsError) {
+    alert("발주 상세 불러오기 실패: " + itemsError.message);
+    return;
+  }
+
+  loadedOrderId = header.id;
+  loadedMode = "loaded";
+  currentVendorContactName = header.vendor_contact_name || "";
+  currentVendorContactPhone = header.vendor_contact_phone || "";
+
+  document.getElementById("order_no").value = header.order_no ?? "";
+  document.getElementById("vendor_select").value = header.vendor_id ?? "";
+  document.getElementById("requester_company").value = header.requester_company ?? "AK디자인";
+  document.getElementById("requester_name").value = header.requester_name ?? "";
+  document.getElementById("requester_phone").value = header.requester_phone ?? "";
+  document.getElementById("site_name").value = header.site_name ?? "";
+  document.getElementById("site_address").value = header.site_address ?? "";
+  document.getElementById("order_date").value = header.order_date ?? "";
+  document.getElementById("arrival_date").value = header.arrival_date ?? "";
+  document.getElementById("memo").value = header.memo ?? "";
+
+  orderItems = (items || []).map(x => ({
+    material_id: x.material_id,
+    item_code_snapshot: x.item_code_snapshot,
+    item_name_snapshot: x.item_name_snapshot,
+    spec_snapshot: x.spec_snapshot,
+    unit_snapshot: x.unit_snapshot,
+    order_qty: Number(x.order_qty || 0),
+    line_note: x.line_note ?? ""
+  }));
+
+  renderOrderItems();
+  setModeInfo();
+  await loadVendorMaterials();
+  currentVendorContactName = header.vendor_contact_name || currentVendorContactName;
+  currentVendorContactPhone = header.vendor_contact_phone || currentVendorContactPhone;
+  syncHeaderDisplay();
+
+  alert("발주 상세 불러오기 완료");
+}
+
+function applyPrintMode() {
+  const title = document.getElementById("printMainTitle");
+  const header = document.getElementById("itemHeaderTitle");
+  title.textContent = loadedMode === "loaded" ? "수정발주" : "신규발주";
+  header.textContent = "No";
+  syncHeaderDisplay();
+}
+
+function restoreScreenMode() {
+  const header = document.getElementById("itemHeaderTitle");
+  if (header) header.textContent = "코드";
+}
+
+function printPdf() {
+  applyPrintMode();
+  window.print();
+  setTimeout(() => restoreScreenMode(), 300);
+}
+
+async function init() {
+  await loadVendors();
+  await loadRequesterContacts();
+  newOrder();
+  await loadRecentOrders();
+
+  document.getElementById("vendor_select").addEventListener("change", async () => {
+    await loadVendorMaterials();
+    syncHeaderDisplay();
+  });
+
+  document.getElementById("requester_name_select").addEventListener("change", fillRequesterPhoneFromSelect);
+  document.getElementById("requester_name").addEventListener("input", syncHeaderDisplay);
+  document.getElementById("requester_phone").addEventListener("input", syncHeaderDisplay);
+  document.getElementById("site_address").addEventListener("input", syncHeaderDisplay);
+  document.getElementById("order_date").addEventListener("input", syncHeaderDisplay);
+  document.getElementById("arrival_date").addEventListener("input", syncHeaderDisplay);
+  document.getElementById("memo").addEventListener("input", syncHeaderDisplay);
+
+  setModeInfo();
+  syncHeaderDisplay();
+}
+
+init();
+</script>
+</body>
+</html>ntById("siteAddressText").textContent = siteAddress;
   document.getElementById("orderDateText").textContent = orderDate;
   document.getElementById("arrivalDateText").textContent = arrivalDate;
   document.getElementById("memoText").textContent = memo;
