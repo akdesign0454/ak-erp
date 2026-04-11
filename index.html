@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AK ERP 통합본</title>
+<title>AK디자인 자재관리 ERP</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   * { box-sizing: border-box; }
@@ -252,11 +252,11 @@
 <div id="loginScreen" class="login-wrap">
   <div class="login-card">
     <h2>AK ERP 로그인</h2>
-    <div class="small">아이디와 비밀번호를 입력해야 진입할 수 있습니다.</div>
-    <input id="loginId" placeholder="아이디">
+    <div class="small">Supabase Auth 이메일 / 비밀번호 로그인입니다.</div>
+    <input id="loginId" type="email" placeholder="이메일">
     <input id="loginPw" type="password" placeholder="비밀번호">
     <button class="menu-btn" onclick="handleLogin()">로그인</button>
-    <div class="small">이 방식은 1차 차단용입니다. 진짜 보안은 추후 Supabase Auth를 붙여야 합니다.</div>
+    <div class="small">로그인 성공 시에만 앱이 열립니다.</div>
   </div>
 </div>
 
@@ -654,20 +654,32 @@
 
 <script>
 /* =========================
-   1차 로그인 게이트
+   Supabase
 ========================= */
-const APP_LOGIN_ID = "admin";
-const APP_LOGIN_PW = "1234";
+const url = "https://gmqjbkqttkkotvvjnsiz.supabase.co";
+const key = "sb_publishable_NGNO5UWtbkgCWQQ6jwTe6Q_4evcuVD9";
+const db = supabase.createClient(url, key);
 
-function handleLogin() {
-  const id = document.getElementById("loginId").value.trim();
-  const pw = document.getElementById("loginPw").value.trim();
+/* =========================
+   Auth 로그인
+========================= */
+async function handleLogin() {
+  const email = document.getElementById("loginId").value.trim();
+  const password = document.getElementById("loginPw").value.trim();
 
-  if (id === APP_LOGIN_ID && pw === APP_LOGIN_PW) {
-    sessionStorage.setItem("ak_erp_login", "ok");
-    enterApp();
-  } else {
-    alert("아이디 또는 비밀번호가 틀렸습니다.");
+  if (!email || !password) {
+    alert("이메일과 비밀번호를 입력하세요.");
+    return;
+  }
+
+  const { error } = await db.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    alert("로그인 실패: " + error.message);
+    return;
   }
 }
 
@@ -676,17 +688,39 @@ function enterApp() {
   document.getElementById("appRoot").classList.remove("hidden");
 }
 
-function logout() {
-  sessionStorage.removeItem("ak_erp_login");
-  location.reload();
+async function logout() {
+  await db.auth.signOut();
 }
 
-/* =========================
-   Supabase
-========================= */
-const url = "https://gmqjbkqttkkotvvjnsiz.supabase.co";
-const key = "sb_publishable_NGNO5UWtbkgCWQQ6jwTe6Q_4evcuVD9";
-const db = supabase.createClient(url, key);
+async function checkSessionOnLoad() {
+  const { data, error } = await db.auth.getSession();
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  if (data.session) {
+    enterApp();
+    await initAll();
+  }
+}
+
+let appInitialized = false;
+
+db.auth.onAuthStateChange(async (event, session) => {
+  if (event === "SIGNED_IN" && session) {
+    enterApp();
+    if (!appInitialized) {
+      await initAll();
+      appInitialized = true;
+    }
+  }
+
+  if (event === "SIGNED_OUT") {
+    location.reload();
+  }
+});
 
 /* =========================
    화면 전환
@@ -1860,7 +1894,9 @@ async function receipt_process() {
   alert("입고 완료");
   await receipt_loadSelected();
   await material_loadMaterials();
-  await purchase_loadVendorMaterials();
+  if (document.getElementById("purchase_vendor_select").value) {
+    await purchase_loadVendorMaterials();
+  }
 }
 
 /* =========================
@@ -1912,7 +1948,7 @@ async function vendorDelete_deleteVendor() {
 
   const { error } = await db.from("vendors").delete().eq("id", vendorDelete_selectedVendorId);
   if (error) {
-    alert("업체 삭제 실패: " + error.message + "\n연결된 자재가 있으면 삭제가 막힐 수 있습니다.");
+    alert("업체 삭제 실패: " + error.message + "\\n연결된 자재가 있으면 삭제가 막힐 수 있습니다.");
     return;
   }
 
@@ -2031,9 +2067,10 @@ async function initAll() {
 }
 
 window.addEventListener("load", async () => {
-  if (sessionStorage.getItem("ak_erp_login") === "ok") {
-    enterApp();
+  await checkSessionOnLoad();
+  if (!appInitialized && !document.getElementById("appRoot").classList.contains("hidden")) {
     await initAll();
+    appInitialized = true;
   }
 });
 </script>
