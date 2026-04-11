@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AK ERP 통합본</title>
+<title>AK디자인 자재관리 ERP</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   * { box-sizing: border-box; }
@@ -26,9 +26,7 @@
     padding: 12px;
     margin-bottom: 12px;
   }
-  h1, h2, h3 {
-    margin: 0 0 10px 0;
-  }
+  h1, h2, h3 { margin: 0 0 10px 0; }
   input, select, textarea, button {
     width: 100%;
     padding: 10px;
@@ -207,9 +205,7 @@
     .row, .row3, .btn-row, .menu-grid, .print-info-grid {
       grid-template-columns: 1fr !important;
     }
-    .party-line {
-      gap: 10px;
-    }
+    .party-line { gap: 10px; }
   }
 
   @media print {
@@ -218,9 +214,7 @@
     .no-print {
       display: none !important;
     }
-    body {
-      background: #fff;
-    }
+    body { background: #fff; }
     .app {
       max-width: none;
       padding: 0;
@@ -240,9 +234,7 @@
       -webkit-appearance: none;
       outline: none;
     }
-    button {
-      display: none !important;
-    }
+    button { display: none !important; }
   }
 </style>
 </head>
@@ -253,21 +245,8 @@
     <form onsubmit="return submitLogin(event)">
       <h2>AK ERP 로그인</h2>
       <div class="small">이메일 / 비밀번호 로그인</div>
-
-      <input id="loginId"
-             type="email"
-             placeholder="이메일"
-             autocapitalize="none"
-             autocomplete="username"
-             spellcheck="false">
-
-      <input id="loginPw"
-             type="password"
-             placeholder="비밀번호"
-             autocapitalize="none"
-             autocomplete="current-password"
-             spellcheck="false">
-
+      <input id="loginId" type="email" placeholder="이메일" autocapitalize="none" autocomplete="username" spellcheck="false">
+      <input id="loginPw" type="password" placeholder="비밀번호" autocapitalize="none" autocomplete="current-password" spellcheck="false">
       <button type="submit" class="menu-btn">로그인</button>
       <div class="small">로그인 성공 시 메인 화면으로 이동합니다.</div>
     </form>
@@ -277,7 +256,7 @@
 <div id="appRoot" class="hidden">
   <div class="app">
     <div class="topbar">
-      <div class="topbar-title">AK ERP 통합본</div>
+      <div class="topbar-title">AK디자인 자재관리 ERP</div>
       <button class="muted-btn no-print" style="width:auto;padding:10px 14px;" onclick="logout()">로그아웃</button>
     </div>
 
@@ -318,8 +297,7 @@
         </div>
 
         <div class="row no-print">
-          <input id="purchase_site_name" placeholder="현장명">
-          <input id="purchase_site_address" placeholder="현장주소">
+          <select id="purchase_site_address_select"></select>
         </div>
 
         <div class="row no-print">
@@ -487,6 +465,26 @@
         </div>
 
         <button class="muted-btn" onclick="material_resetVendorForm()">업체 입력 초기화</button>
+      </div>
+
+      <div class="card">
+        <h3>현장주소 관리</h3>
+        <div class="small">현장주소를 등록해두면 발주 화면에서 선택해서 사용할 수 있습니다.</div>
+
+        <select id="site_manage_select" onchange="site_loadToForm()">
+          <option value="">현장주소 선택</option>
+        </select>
+
+        <input id="site_address_input" placeholder="현장주소">
+        <textarea id="site_note_input" placeholder="비고"></textarea>
+
+        <div class="btn-row">
+          <button class="menu-btn" onclick="site_save()">현장주소 신규 저장</button>
+          <button class="sub-btn" onclick="site_update()">현장주소 수정 저장</button>
+        </div>
+
+        <button class="danger-btn" onclick="site_delete()">현장주소 삭제</button>
+        <button class="muted-btn" onclick="site_resetForm()">현장주소 입력 초기화</button>
       </div>
 
       <div class="card">
@@ -677,6 +675,7 @@ function submitLogin(event) {
   handleLogin();
   return false;
 }
+
 function enterApp() {
   document.getElementById("loginScreen").classList.add("hidden");
   document.getElementById("appRoot").classList.remove("hidden");
@@ -768,6 +767,20 @@ function material_makeCode(n) {
   return "item_" + String(n).padStart(5, "0");
 }
 
+function setSelectByText(selectId, text) {
+  const sel = document.getElementById(selectId);
+  const target = (text || "").trim();
+
+  for (let i = 0; i < sel.options.length; i++) {
+    if ((sel.options[i].text || "").trim() === target) {
+      sel.selectedIndex = i;
+      return;
+    }
+  }
+
+  sel.value = "";
+}
+
 async function showScreen(screenId) {
   document.querySelectorAll(".screen").forEach(el => el.classList.remove("active"));
   document.getElementById(screenId).classList.add("active");
@@ -824,7 +837,8 @@ function purchase_syncHeaderDisplay() {
   const requesterCompany = document.getElementById("purchase_requester_company").value || "AK디자인";
   const requesterName = document.getElementById("purchase_requester_name").value || "-";
   const requesterPhone = document.getElementById("purchase_requester_phone").value || "-";
-  const siteAddress = document.getElementById("purchase_site_address").value || "-";
+  const siteAddressSelect = document.getElementById("purchase_site_address_select");
+  const siteAddress = siteAddressSelect.selectedOptions[0]?.text || "-";
   const orderDate = document.getElementById("purchase_order_date").value || "-";
   const arrivalDate = document.getElementById("purchase_arrival_date").value || "-";
   const memo = document.getElementById("purchase_memo").value || "-";
@@ -851,8 +865,7 @@ function purchase_clearHeaderInputs() {
   document.getElementById("purchase_requester_name_select").value = "";
   document.getElementById("purchase_requester_name").value = "";
   document.getElementById("purchase_requester_phone").value = "";
-  document.getElementById("purchase_site_name").value = "";
-  document.getElementById("purchase_site_address").value = "";
+  document.getElementById("purchase_site_address_select").value = "";
   document.getElementById("purchase_order_date").value = todayString();
   document.getElementById("purchase_arrival_date").value = "";
   document.getElementById("purchase_memo").value = "";
@@ -902,6 +915,26 @@ async function purchase_loadRequesterContacts() {
   data.forEach(row => {
     sel.innerHTML += `<option value="${row.id}" data-phone="${row.contact_phone}">${row.contact_name}</option>`;
   });
+}
+
+async function purchase_loadSiteAddresses() {
+  const { data, error } = await db
+    .from("site_addresses")
+    .select("*")
+    .eq("is_active", true)
+    .order("site_address", { ascending: true });
+
+  if (error) throw new Error("현장주소 불러오기 실패: " + error.message);
+
+  const sel = document.getElementById("purchase_site_address_select");
+  const currentText = sel.selectedOptions[0]?.text || "";
+  sel.innerHTML = '<option value="">현장주소 선택</option>';
+
+  data.forEach(row => {
+    sel.innerHTML += `<option value="${row.id}">${row.site_address}</option>`;
+  });
+
+  if (currentText) setSelectByText("purchase_site_address_select", currentText);
 }
 
 function purchase_fillRequesterPhoneFromSelect() {
@@ -1019,8 +1052,8 @@ function purchase_getHeaderFormData() {
     requester_company: "AK디자인",
     requester_name: document.getElementById("purchase_requester_name").value.trim(),
     requester_phone: document.getElementById("purchase_requester_phone").value.trim(),
-    site_name: document.getElementById("purchase_site_name").value.trim(),
-    site_address: document.getElementById("purchase_site_address").value.trim(),
+    site_name: "",
+    site_address: document.getElementById("purchase_site_address_select").selectedOptions[0]?.text || "",
     order_date: document.getElementById("purchase_order_date").value,
     arrival_date: document.getElementById("purchase_arrival_date").value,
     memo: document.getElementById("purchase_memo").value.trim()
@@ -1031,6 +1064,7 @@ function purchase_validateOrderData(formData) {
   if (!formData.order_no) return alert("발주번호를 먼저 생성하세요."), false;
   if (!formData.vendor_id) return alert("업체를 선택하세요."), false;
   if (!formData.requester_name || !formData.requester_phone) return alert("발주처 담당자와 전화번호를 입력하세요."), false;
+  if (!formData.site_address) return alert("현장주소를 선택하세요."), false;
   if (purchase_orderItems.length === 0) return alert("발주 항목을 한 개 이상 추가하세요."), false;
   const validItems = purchase_orderItems.filter(x => Number(x.order_qty) > 0);
   if (validItems.length === 0) return alert("수량이 0보다 큰 항목이 필요합니다."), false;
@@ -1219,8 +1253,8 @@ async function purchase_loadOrderDetail(orderId) {
   document.getElementById("purchase_requester_company").value = header.requester_company ?? "AK디자인";
   document.getElementById("purchase_requester_name").value = header.requester_name ?? "";
   document.getElementById("purchase_requester_phone").value = header.requester_phone ?? "";
-  document.getElementById("purchase_site_name").value = header.site_name ?? "";
-  document.getElementById("purchase_site_address").value = header.site_address ?? "";
+  await purchase_loadSiteAddresses();
+  setSelectByText("purchase_site_address_select", header.site_address ?? "");
   document.getElementById("purchase_order_date").value = header.order_date ?? "";
   document.getElementById("purchase_arrival_date").value = header.arrival_date ?? "";
   document.getElementById("purchase_memo").value = header.memo ?? "";
@@ -1245,6 +1279,7 @@ async function purchase_loadOrderDetail(orderId) {
 async function purchase_init() {
   await purchase_loadVendors();
   await purchase_loadRequesterContacts();
+  await purchase_loadSiteAddresses();
   purchase_newOrder();
   await purchase_loadRecentOrders();
 
@@ -1256,7 +1291,7 @@ async function purchase_init() {
     document.getElementById("purchase_requester_name_select").addEventListener("change", purchase_fillRequesterPhoneFromSelect);
     document.getElementById("purchase_requester_name").addEventListener("input", purchase_syncHeaderDisplay);
     document.getElementById("purchase_requester_phone").addEventListener("input", purchase_syncHeaderDisplay);
-    document.getElementById("purchase_site_address").addEventListener("input", purchase_syncHeaderDisplay);
+    document.getElementById("purchase_site_address_select").addEventListener("change", purchase_syncHeaderDisplay);
     document.getElementById("purchase_order_date").addEventListener("input", purchase_syncHeaderDisplay);
     document.getElementById("purchase_arrival_date").addEventListener("input", purchase_syncHeaderDisplay);
     document.getElementById("purchase_memo").addEventListener("input", purchase_syncHeaderDisplay);
@@ -1720,11 +1755,162 @@ async function material_resetMaterialForm() {
   document.getElementById("material_note").value = "";
 }
 
+/* =========================
+   현장주소 관리
+========================= */
+let site_selectedId = null;
+
+async function site_loadList() {
+  const { data, error } = await db
+    .from("site_addresses")
+    .select("*")
+    .eq("is_active", true)
+    .order("site_address", { ascending: true });
+
+  if (error) {
+    alert("현장주소 목록 불러오기 실패: " + error.message);
+    return;
+  }
+
+  const sel = document.getElementById("site_manage_select");
+  sel.innerHTML = '<option value="">현장주소 선택</option>';
+
+  data.forEach(row => {
+    sel.innerHTML += `<option value="${row.id}">${row.site_address}</option>`;
+  });
+}
+
+function site_resetForm() {
+  site_selectedId = null;
+  document.getElementById("site_manage_select").value = "";
+  document.getElementById("site_address_input").value = "";
+  document.getElementById("site_note_input").value = "";
+}
+
+async function site_loadToForm() {
+  const id = document.getElementById("site_manage_select").value;
+  site_selectedId = id || null;
+
+  if (!id) {
+    site_resetForm();
+    return;
+  }
+
+  const { data, error } = await db
+    .from("site_addresses")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error) {
+    alert("현장주소 조회 실패: " + error.message);
+    return;
+  }
+
+  site_selectedId = data.id;
+  document.getElementById("site_address_input").value = data.site_address || "";
+  document.getElementById("site_note_input").value = data.note || "";
+}
+
+async function site_save() {
+  const site_address = document.getElementById("site_address_input").value.trim();
+  const note = document.getElementById("site_note_input").value.trim();
+
+  if (!site_address) {
+    alert("현장주소를 입력하세요.");
+    return;
+  }
+
+  const { error } = await db
+    .from("site_addresses")
+    .insert([{
+      site_address,
+      note,
+      is_active: true,
+      updated_at: new Date().toISOString()
+    }]);
+
+  if (error) {
+    alert("현장주소 저장 실패: " + error.message);
+    return;
+  }
+
+  alert("현장주소 저장 완료");
+  await site_loadList();
+  if (purchaseInitialized) await purchase_loadSiteAddresses();
+  site_resetForm();
+}
+
+async function site_update() {
+  if (!site_selectedId) {
+    alert("수정할 현장주소를 먼저 선택하세요.");
+    return;
+  }
+
+  const site_address = document.getElementById("site_address_input").value.trim();
+  const note = document.getElementById("site_note_input").value.trim();
+
+  if (!site_address) {
+    alert("현장주소를 입력하세요.");
+    return;
+  }
+
+  if (!confirm("선택한 현장주소를 수정 저장하시겠습니까?")) return;
+
+  const { error } = await db
+    .from("site_addresses")
+    .update({
+      site_address,
+      note,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", site_selectedId);
+
+  if (error) {
+    alert("현장주소 수정 실패: " + error.message);
+    return;
+  }
+
+  alert("현장주소 수정 완료");
+  await site_loadList();
+  if (purchaseInitialized) await purchase_loadSiteAddresses();
+  document.getElementById("site_manage_select").value = site_selectedId;
+  await site_loadToForm();
+}
+
+async function site_delete() {
+  if (!site_selectedId) {
+    alert("삭제할 현장주소를 먼저 선택하세요.");
+    return;
+  }
+
+  const currentText = document.getElementById("site_address_input").value.trim();
+
+  if (!confirm(`정말로 "${currentText}" 현장주소를 삭제하시겠습니까?`)) return;
+
+  const { error } = await db
+    .from("site_addresses")
+    .delete()
+    .eq("id", site_selectedId);
+
+  if (error) {
+    alert("현장주소 삭제 실패: " + error.message);
+    return;
+  }
+
+  alert("현장주소 삭제 완료");
+  await site_loadList();
+  if (purchaseInitialized) await purchase_loadSiteAddresses();
+  site_resetForm();
+}
+
 async function material_init() {
   await material_loadRequesterList();
   await material_loadVendor();
   await material_loadMaterials();
   await material_resetMaterialForm();
+  await site_loadList();
+  site_resetForm();
 }
 
 /* =========================
