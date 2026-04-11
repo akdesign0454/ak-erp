@@ -243,7 +243,7 @@
 <div id="loginScreen" class="login-wrap">
   <div class="login-card">
     <form onsubmit="return submitLogin(event)">
-      <h2>AK ERP 로그인</h2>
+      <h2>AK디자인 자재관리 ERP 로그인</h2>
       <div class="small">이메일 / 비밀번호 로그인</div>
       <input id="loginId" type="email" placeholder="이메일" autocapitalize="none" autocomplete="username" spellcheck="false">
       <input id="loginPw" type="password" placeholder="비밀번호" autocapitalize="none" autocomplete="current-password" spellcheck="false">
@@ -263,10 +263,10 @@
     <div id="mainMenu" class="card no-print">
       <h3>메뉴</h3>
       <div class="menu-grid">
+        <button class="menu-btn" onclick="showScreen('screenSiteReport')">현장 관리 보고</button>
         <button class="menu-btn" onclick="showScreen('screenPurchase')">발주서 작성</button>
-        <button class="menu-btn" onclick="showScreen('screenMaterial')">업체 / 자재 / 현장주소관리</button>
+        <button class="menu-btn" onclick="showScreen('screenMaterial')">업체 / 자재 관리</button>
         <button class="menu-btn" onclick="showScreen('screenReceipt')">입고 처리</button>
-     
       
       </div>
     </div>
@@ -469,7 +469,7 @@
 
       <div class="card">
         <h3>현장주소 관리</h3>
-        <div class="small">현장주소를 등록해두면 발주 화면에서 선택해서 사용할 수 있습니다.</div>
+        <div class="small">현장주소를 등록해두면 발주 화면과 현장 관리 보고에서 선택해서 사용할 수 있습니다.</div>
 
         <select id="site_manage_select" onchange="site_loadToForm()">
           <option value="">현장주소 선택</option>
@@ -536,6 +536,68 @@
               </tr>
             </thead>
             <tbody id="material_body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="screenSiteReport" class="screen">
+      <div class="card">
+        <h3>현장 관리 보고</h3>
+        <div class="small">같은 날짜라도 현장주소가 다르면 각각 따로 저장됩니다. 같은 날짜 + 같은 현장은 수정 저장 방식입니다.</div>
+
+        <input id="site_report_id" type="hidden">
+
+        <div class="row">
+          <div>
+            <label>일자</label>
+            <input id="site_report_date" type="date">
+          </div>
+          <div>
+            <label>현장주소</label>
+            <select id="site_report_site_select"></select>
+          </div>
+        </div>
+
+        <textarea id="site_report_content" placeholder="현장 내용 입력"></textarea>
+
+        <div class="btn-row">
+          <button class="menu-btn" onclick="siteReport_save()">저장</button>
+          <button class="sub-btn" onclick="siteReport_update()">수정</button>
+        </div>
+
+        <button class="muted-btn" onclick="siteReport_resetForm()">새 보고 작성</button>
+      </div>
+
+      <div class="card">
+        <h3>현장별 보고내역 조회</h3>
+
+        <div class="row">
+          <div>
+            <label>일자 검색</label>
+            <input id="site_report_search_date" type="date">
+          </div>
+          <div>
+            <label>현장 검색</label>
+            <select id="site_report_search_site_select"></select>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button class="menu-btn" onclick="siteReport_search()">조회</button>
+          <button class="muted-btn" onclick="siteReport_clearSearch()">검색 초기화</button>
+        </div>
+
+        <div class="table-wrap">
+          <table style="min-width:900px;">
+            <thead>
+              <tr>
+                <th>일자</th>
+                <th>현장</th>
+                <th>내용</th>
+              </tr>
+            </thead>
+            <tbody id="site_report_body"></tbody>
           </table>
         </div>
       </div>
@@ -666,6 +728,7 @@ const db = supabase.createClient(url, key);
 let appInitialized = false;
 let purchaseInitialized = false;
 let materialInitialized = false;
+let siteReportInitialized = false;
 let receiptInitialized = false;
 let vendorDeleteInitialized = false;
 let requesterDeleteInitialized = false;
@@ -722,6 +785,7 @@ async function logout() {
   appInitialized = false;
   purchaseInitialized = false;
   materialInitialized = false;
+  siteReportInitialized = false;
   receiptInitialized = false;
   vendorDeleteInitialized = false;
   requesterDeleteInitialized = false;
@@ -793,6 +857,10 @@ async function showScreen(screenId) {
     if (screenId === "screenMaterial" && !materialInitialized) {
       await material_init();
       materialInitialized = true;
+    }
+    if (screenId === "screenSiteReport" && !siteReportInitialized) {
+      await siteReport_init();
+      siteReportInitialized = true;
     }
     if (screenId === "screenReceipt" && !receiptInitialized) {
       await receipt_init();
@@ -1838,6 +1906,7 @@ async function site_save() {
   alert("현장주소 저장 완료");
   await site_loadList();
   if (purchaseInitialized) await purchase_loadSiteAddresses();
+  if (siteReportInitialized) await siteReport_loadSiteOptions();
   site_resetForm();
 }
 
@@ -1874,6 +1943,7 @@ async function site_update() {
   alert("현장주소 수정 완료");
   await site_loadList();
   if (purchaseInitialized) await purchase_loadSiteAddresses();
+  if (siteReportInitialized) await siteReport_loadSiteOptions();
   document.getElementById("site_manage_select").value = site_selectedId;
   await site_loadToForm();
 }
@@ -1886,7 +1956,11 @@ async function site_delete() {
 
   const currentText = document.getElementById("site_address_input").value.trim();
 
-  if (!confirm(`정말로 "${currentText}" 현장주소를 삭제하시겠습니까?`)) return;
+  const ok = confirm(
+    `정말로 아래 현장주소를 삭제하시겠습니까?\n\n${currentText}\n\n연결된 현장관리 보고 내용도 같이 삭제됩니다.\n삭제 후에는 되돌릴 수 없습니다.`
+  );
+
+  if (!ok) return;
 
   const { error } = await db
     .from("site_addresses")
@@ -1901,6 +1975,10 @@ async function site_delete() {
   alert("현장주소 삭제 완료");
   await site_loadList();
   if (purchaseInitialized) await purchase_loadSiteAddresses();
+  if (siteReportInitialized) {
+    await siteReport_loadSiteOptions();
+    await siteReport_search();
+  }
   site_resetForm();
 }
 
@@ -1911,6 +1989,221 @@ async function material_init() {
   await material_resetMaterialForm();
   await site_loadList();
   site_resetForm();
+}
+
+/* =========================
+   현장 관리 보고
+========================= */
+let siteReport_selectedId = null;
+
+async function siteReport_loadSiteOptions() {
+  const { data, error } = await db
+    .from("site_addresses")
+    .select("*")
+    .eq("is_active", true)
+    .order("site_address", { ascending: true });
+
+  if (error) throw new Error("현장주소 옵션 불러오기 실패: " + error.message);
+
+  const editSel = document.getElementById("site_report_site_select");
+  const searchSel = document.getElementById("site_report_search_site_select");
+  const currentEditText = editSel.selectedOptions[0]?.text || "";
+  const currentSearchText = searchSel.selectedOptions[0]?.text || "";
+
+  editSel.innerHTML = '<option value="">현장주소 선택</option>';
+  searchSel.innerHTML = '<option value="">전체 현장</option>';
+
+  data.forEach(row => {
+    editSel.innerHTML += `<option value="${row.id}">${row.site_address}</option>`;
+    searchSel.innerHTML += `<option value="${row.id}">${row.site_address}</option>`;
+  });
+
+  if (currentEditText) setSelectByText("site_report_site_select", currentEditText);
+  if (currentSearchText) setSelectByText("site_report_search_site_select", currentSearchText);
+}
+
+function siteReport_resetForm() {
+  siteReport_selectedId = null;
+  document.getElementById("site_report_id").value = "";
+  document.getElementById("site_report_date").value = todayString();
+  document.getElementById("site_report_site_select").value = "";
+  document.getElementById("site_report_content").value = "";
+}
+
+function siteReport_clearSearch() {
+  document.getElementById("site_report_search_date").value = "";
+  document.getElementById("site_report_search_site_select").value = "";
+  siteReport_search();
+}
+
+async function siteReport_save() {
+  const report_date = document.getElementById("site_report_date").value;
+  const site_address_id = document.getElementById("site_report_site_select").value;
+  const report_content = document.getElementById("site_report_content").value.trim();
+
+  if (!report_date) {
+    alert("일자를 선택하세요.");
+    return;
+  }
+  if (!site_address_id) {
+    alert("현장주소를 선택하세요.");
+    return;
+  }
+  if (!report_content) {
+    alert("현장 내용을 입력하세요.");
+    return;
+  }
+
+  const { data: found, error: findError } = await db
+    .from("site_reports")
+    .select("*")
+    .eq("report_date", report_date)
+    .eq("site_address_id", site_address_id)
+    .maybeSingle();
+
+  if (findError) {
+    alert("기존 보고 조회 실패: " + findError.message);
+    return;
+  }
+
+  if (found) {
+    alert("같은 날짜와 같은 현장주소의 보고가 이미 있습니다.\n수정 버튼을 사용하세요.");
+    siteReport_selectedId = found.id;
+    document.getElementById("site_report_id").value = found.id;
+    document.getElementById("site_report_content").value = found.report_content || "";
+    return;
+  }
+
+  const { error } = await db
+    .from("site_reports")
+    .insert([{
+      report_date,
+      site_address_id,
+      report_content,
+      updated_at: new Date().toISOString()
+    }]);
+
+  if (error) {
+    alert("현장 보고 저장 실패: " + error.message);
+    return;
+  }
+
+  alert("현장 보고 저장 완료");
+  await siteReport_search();
+  siteReport_resetForm();
+}
+
+async function siteReport_update() {
+  if (!siteReport_selectedId) {
+    alert("먼저 조회 목록에서 수정할 보고를 선택하세요.");
+    return;
+  }
+
+  const report_date = document.getElementById("site_report_date").value;
+  const site_address_id = document.getElementById("site_report_site_select").value;
+  const report_content = document.getElementById("site_report_content").value.trim();
+
+  if (!report_date) {
+    alert("일자를 선택하세요.");
+    return;
+  }
+  if (!site_address_id) {
+    alert("현장주소를 선택하세요.");
+    return;
+  }
+  if (!report_content) {
+    alert("현장 내용을 입력하세요.");
+    return;
+  }
+
+  if (!confirm("선택한 현장 보고를 수정 저장하시겠습니까?")) return;
+
+  const { data: dup, error: dupError } = await db
+    .from("site_reports")
+    .select("id")
+    .eq("report_date", report_date)
+    .eq("site_address_id", site_address_id)
+    .neq("id", siteReport_selectedId)
+    .maybeSingle();
+
+  if (dupError) {
+    alert("중복 확인 실패: " + dupError.message);
+    return;
+  }
+
+  if (dup) {
+    alert("같은 날짜와 같은 현장주소의 다른 보고가 이미 있습니다.");
+    return;
+  }
+
+  const { error } = await db
+    .from("site_reports")
+    .update({
+      report_date,
+      site_address_id,
+      report_content,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", siteReport_selectedId);
+
+  if (error) {
+    alert("현장 보고 수정 실패: " + error.message);
+    return;
+  }
+
+  alert("현장 보고 수정 완료");
+  await siteReport_search();
+}
+
+async function siteReport_search() {
+  const searchDate = document.getElementById("site_report_search_date").value;
+  const searchSiteId = document.getElementById("site_report_search_site_select").value;
+
+  let query = db
+    .from("site_reports")
+    .select("*, site_addresses(site_address)")
+    .order("report_date", { ascending: false })
+    .order("id", { ascending: false });
+
+  if (searchDate) query = query.eq("report_date", searchDate);
+  if (searchSiteId) query = query.eq("site_address_id", searchSiteId);
+
+  const { data, error } = await query;
+
+  if (error) {
+    alert("현장 보고 조회 실패: " + error.message);
+    return;
+  }
+
+  const body = document.getElementById("site_report_body");
+  body.innerHTML = "";
+
+  data.forEach(row => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${row.report_date ?? ""}</td>
+      <td>${row.site_addresses?.site_address ?? ""}</td>
+      <td style="white-space:normal;min-width:300px;">${(row.report_content ?? "").replace(/\n/g, "<br>")}</td>
+    `;
+    tr.onclick = () => siteReport_loadDetail(row);
+    body.appendChild(tr);
+  });
+}
+
+function siteReport_loadDetail(row) {
+  siteReport_selectedId = row.id;
+  document.getElementById("site_report_id").value = row.id;
+  document.getElementById("site_report_date").value = row.report_date || "";
+  document.getElementById("site_report_content").value = row.report_content || "";
+
+  const siteText = row.site_addresses?.site_address || "";
+  setSelectByText("site_report_site_select", siteText);
+}
+
+async function siteReport_init() {
+  await siteReport_loadSiteOptions();
+  siteReport_resetForm();
+  await siteReport_search();
 }
 
 /* =========================
