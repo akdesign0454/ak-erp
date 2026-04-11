@@ -250,12 +250,27 @@
 
 <div id="loginScreen" class="login-wrap">
   <div class="login-card">
-    <h2>AK ERP 로그인</h2>
-    <div class="small">이메일 / 비밀번호 로그인</div>
-    <input id="loginId" type="email" placeholder="이메일" autocapitalize="none" autocomplete="username" spellcheck="false">
-    <input id="loginPw" type="password" placeholder="비밀번호" autocapitalize="none" autocomplete="current-password" spellcheck="false">
-    <button class="menu-btn" onclick="handleLogin()">로그인</button>
-    <div class="small">로그인 성공 시 메인 화면으로 이동합니다.</div>
+    <form onsubmit="return submitLogin(event)">
+      <h2>AK ERP 로그인</h2>
+      <div class="small">이메일 / 비밀번호 로그인</div>
+
+      <input id="loginId"
+             type="email"
+             placeholder="이메일"
+             autocapitalize="none"
+             autocomplete="username"
+             spellcheck="false">
+
+      <input id="loginPw"
+             type="password"
+             placeholder="비밀번호"
+             autocapitalize="none"
+             autocomplete="current-password"
+             spellcheck="false">
+
+      <button type="submit" class="menu-btn">로그인</button>
+      <div class="small">로그인 성공 시 메인 화면으로 이동합니다.</div>
+    </form>
   </div>
 </div>
 
@@ -657,6 +672,11 @@ let receiptInitialized = false;
 let vendorDeleteInitialized = false;
 let requesterDeleteInitialized = false;
 
+function submitLogin(event) {
+  event.preventDefault();
+  handleLogin();
+  return false;
+}
 function enterApp() {
   document.getElementById("loginScreen").classList.add("hidden");
   document.getElementById("appRoot").classList.remove("hidden");
