@@ -236,6 +236,10 @@
     }
     button { display: none !important; }
   }
+function autoResize(el) {
+  el.style.height = "auto";
+  el.style.height = el.scrollHeight + "px";
+}
 </style>
 </head>
 <body>
@@ -561,7 +565,8 @@
 
         <textarea id="site_report_content"
   placeholder="현장 내용 입력"
-  style="min-height:25vh;">
+  oninput="autoResize(this)"
+  style="min-height:150px; max-height:500px; overflow:auto;">
 </textarea>
 
         <div class="btn-row">
