@@ -665,6 +665,27 @@ let appInitialized = false;
 /* =========================
    Auth 로그인
 ========================= */
+function enterApp() {
+  document.getElementById("loginScreen").classList.add("hidden");
+  document.getElementById("appRoot").classList.remove("hidden");
+}
+
+function leaveApp() {
+  document.getElementById("appRoot").classList.add("hidden");
+  document.getElementById("loginScreen").classList.remove("hidden");
+}
+
+async function safeInitAll() {
+  if (appInitialized) return;
+  try {
+    await initAll();
+    appInitialized = true;
+  } catch (e) {
+    console.error("initAll 오류:", e);
+    alert("초기화 중 오류: " + e.message);
+  }
+}
+
 async function handleLogin() {
   const email = document.getElementById("loginId").value.trim();
   const password = document.getElementById("loginPw").value.trim();
@@ -674,7 +695,7 @@ async function handleLogin() {
     return;
   }
 
-  const { data, error } = await db.auth.signInWithPassword({
+  const { error } = await db.auth.signInWithPassword({
     email,
     password
   });
@@ -684,62 +705,70 @@ async function handleLogin() {
     return;
   }
 
-  try {
-    if (data.session) {
-      enterApp();
+  const { data: sessionData, error: sessionError } = await db.auth.getSession();
 
-      if (!appInitialized) {
-        await initAll();
-        appInitialized = true;
-      }
-    }
-  } catch (e) {
-    console.error(e);
-    alert("로그인 후 초기화 중 오류가 발생했습니다: " + e.message);
+  if (sessionError) {
+    alert("세션 확인 실패: " + sessionError.message);
+    return;
   }
-}
 
-function enterApp() {
-  document.getElementById("loginScreen").classList.add("hidden");
-  document.getElementById("appRoot").classList.remove("hidden");
+  if (!sessionData.session) {
+    alert("로그인은 되었지만 세션이 없습니다.");
+    return;
+  }
+
+  enterApp();
+  await safeInitAll();
 }
 
 async function logout() {
-  await db.auth.signOut();
+  const { error } = await db.auth.signOut();
+  if (error) {
+    alert("로그아웃 실패: " + error.message);
+    return;
+  }
+
+  appInitialized = false;
+  leaveApp();
+  location.reload();
 }
 
 async function checkSessionOnLoad() {
   const { data, error } = await db.auth.getSession();
 
   if (error) {
-    console.error(error);
+    console.error("세션 조회 오류:", error);
     return;
   }
 
   if (data.session) {
     enterApp();
-
-    if (!appInitialized) {
-      await initAll();
-      appInitialized = true;
-    }
+    await safeInitAll();
+  } else {
+    leaveApp();
   }
 }
 
 db.auth.onAuthStateChange(async (event, session) => {
-  if (event === "SIGNED_IN" && session) {
-    enterApp();
+  console.log("Auth state:", event, session ? "session 있음" : "session 없음");
 
-    if (!appInitialized) {
-      await initAll();
-      appInitialized = true;
+  if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+    if (session) {
+      enterApp();
+      await safeInitAll();
     }
   }
 
   if (event === "SIGNED_OUT") {
-    location.reload();
+    appInitialized = false;
+    leaveApp();
   }
 });
+
+window.addEventListener("load", async () => {
+  await checkSessionOnLoad();
+});
+
 
 /* =========================
    화면 전환
