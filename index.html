@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AK디자인 자재관리 ERP</title>
+<title>AK ERP 통합본</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   * { box-sizing: border-box; }
@@ -248,23 +248,21 @@
 </head>
 <body>
 
-<!-- 로그인 화면 -->
 <div id="loginScreen" class="login-wrap">
   <div class="login-card">
     <h2>AK ERP 로그인</h2>
     <div class="small">이메일 / 비밀번호 로그인</div>
-    <input id="loginId" type="email" placeholder="이메일">
-    <input id="loginPw" type="password" placeholder="비밀번호">
+    <input id="loginId" type="email" placeholder="이메일" autocapitalize="none" autocomplete="username" spellcheck="false">
+    <input id="loginPw" type="password" placeholder="비밀번호" autocapitalize="none" autocomplete="current-password" spellcheck="false">
     <button class="menu-btn" onclick="handleLogin()">로그인</button>
-    <div class="small">로그인 성공 시 자동으로 메인 화면으로 이동합니다.</div>
+    <div class="small">로그인 성공 시 메인 화면으로 이동합니다.</div>
   </div>
 </div>
 
-<!-- 메인 앱 -->
 <div id="appRoot" class="hidden">
   <div class="app">
     <div class="topbar">
-      <div class="topbar-title">AK디자인 자재관리 ERP</div>
+      <div class="topbar-title">AK ERP 통합본</div>
       <button class="muted-btn no-print" style="width:auto;padding:10px 14px;" onclick="logout()">로그아웃</button>
     </div>
 
@@ -279,7 +277,6 @@
       </div>
     </div>
 
-    <!-- 발주서 -->
     <section id="screenPurchase" class="screen active">
       <div class="card no-print">
         <h3>현재 상태</h3>
@@ -437,7 +434,6 @@
       </div>
     </section>
 
-    <!-- 업체/자재 관리 -->
     <section id="screenMaterial" class="screen">
       <div class="card">
         <h3>발주처 담당자 관리 (AK디자인)</h3>
@@ -532,7 +528,6 @@
       </div>
     </section>
 
-    <!-- 입고 처리 -->
     <section id="screenReceipt" class="screen">
       <div class="card">
         <h3>입고 처리</h3>
@@ -590,7 +585,6 @@
       </div>
     </section>
 
-    <!-- 업체 삭제 -->
     <section id="screenVendorDelete" class="screen">
       <div class="card">
         <h3>업체 삭제</h3>
@@ -620,7 +614,6 @@
       </div>
     </section>
 
-    <!-- 발주처 담당자 삭제 -->
     <section id="screenRequesterDelete" class="screen">
       <div class="card">
         <h3>발주처 담당자 삭제</h3>
@@ -653,18 +646,17 @@
 </div>
 
 <script>
-/* =========================
-   Supabase
-========================= */
 const url = "https://gmqjbkqttkkotvvjnsiz.supabase.co";
 const key = "sb_publishable_NGNO5UWtbkgCWQQ6jwTe6Q_4evcuVD9";
 const db = supabase.createClient(url, key);
 
 let appInitialized = false;
+let purchaseInitialized = false;
+let materialInitialized = false;
+let receiptInitialized = false;
+let vendorDeleteInitialized = false;
+let requesterDeleteInitialized = false;
 
-/* =========================
-   Auth 로그인
-========================= */
 function enterApp() {
   document.getElementById("loginScreen").classList.add("hidden");
   document.getElementById("appRoot").classList.remove("hidden");
@@ -673,17 +665,6 @@ function enterApp() {
 function leaveApp() {
   document.getElementById("appRoot").classList.add("hidden");
   document.getElementById("loginScreen").classList.remove("hidden");
-}
-
-async function safeInitAll() {
-  if (appInitialized) return;
-  try {
-    await initAll();
-    appInitialized = true;
-  } catch (e) {
-    console.error("initAll 오류:", e);
-    alert("초기화 중 오류: " + e.message);
-  }
 }
 
 async function handleLogin() {
@@ -695,30 +676,22 @@ async function handleLogin() {
     return;
   }
 
-  const { error } = await db.auth.signInWithPassword({
-    email,
-    password
-  });
+  const { data, error } = await db.auth.signInWithPassword({ email, password });
 
   if (error) {
     alert("로그인 실패: " + error.message);
     return;
   }
 
-  const { data: sessionData, error: sessionError } = await db.auth.getSession();
-
-  if (sessionError) {
-    alert("세션 확인 실패: " + sessionError.message);
-    return;
+  if (data.session) {
+    enterApp();
+    if (!appInitialized) {
+      appInitialized = true;
+      await showScreen("screenPurchase");
+    }
+  } else {
+    alert("로그인은 되었지만 세션이 확인되지 않습니다.");
   }
-
-  if (!sessionData.session) {
-    alert("로그인은 되었지만 세션이 없습니다.");
-    return;
-  }
-
-  enterApp();
-  await safeInitAll();
 }
 
 async function logout() {
@@ -727,60 +700,31 @@ async function logout() {
     alert("로그아웃 실패: " + error.message);
     return;
   }
-
   appInitialized = false;
+  purchaseInitialized = false;
+  materialInitialized = false;
+  receiptInitialized = false;
+  vendorDeleteInitialized = false;
+  requesterDeleteInitialized = false;
   leaveApp();
   location.reload();
 }
 
-async function checkSessionOnLoad() {
+window.addEventListener("load", async () => {
   const { data, error } = await db.auth.getSession();
-
   if (error) {
-    console.error("세션 조회 오류:", error);
+    console.error(error);
     return;
   }
-
   if (data.session) {
     enterApp();
-    await safeInitAll();
-  } else {
-    leaveApp();
-  }
-}
-
-db.auth.onAuthStateChange(async (event, session) => {
-  console.log("Auth state:", event, session ? "session 있음" : "session 없음");
-
-  if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-    if (session) {
-      enterApp();
-      await safeInitAll();
+    if (!appInitialized) {
+      appInitialized = true;
+      await showScreen("screenPurchase");
     }
   }
-
-  if (event === "SIGNED_OUT") {
-    appInitialized = false;
-    leaveApp();
-  }
 });
 
-window.addEventListener("load", async () => {
-  await checkSessionOnLoad();
-});
-
-
-/* =========================
-   화면 전환
-========================= */
-function showScreen(screenId) {
-  document.querySelectorAll(".screen").forEach(el => el.classList.remove("active"));
-  document.getElementById(screenId).classList.add("active");
-}
-
-/* =========================
-   공통 유틸
-========================= */
 function todayString() {
   const d = new Date();
   const yyyy = d.getFullYear();
@@ -804,6 +748,37 @@ function material_makeCode(n) {
   return "item_" + String(n).padStart(5, "0");
 }
 
+async function showScreen(screenId) {
+  document.querySelectorAll(".screen").forEach(el => el.classList.remove("active"));
+  document.getElementById(screenId).classList.add("active");
+
+  try {
+    if (screenId === "screenPurchase" && !purchaseInitialized) {
+      await purchase_init();
+      purchaseInitialized = true;
+    }
+    if (screenId === "screenMaterial" && !materialInitialized) {
+      await material_init();
+      materialInitialized = true;
+    }
+    if (screenId === "screenReceipt" && !receiptInitialized) {
+      await receipt_init();
+      receiptInitialized = true;
+    }
+    if (screenId === "screenVendorDelete" && !vendorDeleteInitialized) {
+      await vendorDelete_init();
+      vendorDeleteInitialized = true;
+    }
+    if (screenId === "screenRequesterDelete" && !requesterDeleteInitialized) {
+      await requesterDelete_init();
+      requesterDeleteInitialized = true;
+    }
+  } catch (e) {
+    console.error(screenId + " 초기화 오류:", e);
+    alert(screenId + " 초기화 오류: " + e.message);
+  }
+}
+
 /* =========================
    발주서
 ========================= */
@@ -812,6 +787,7 @@ let purchase_loadedOrderId = null;
 let purchase_loadedMode = "new";
 let purchase_currentVendorContactName = "";
 let purchase_currentVendorContactPhone = "";
+let purchaseEventsBound = false;
 
 function purchase_setModeInfo() {
   const box = document.getElementById("purchase_modeInfo");
@@ -883,10 +859,7 @@ function purchase_newOrder() {
 
 async function purchase_loadVendors() {
   const { data, error } = await db.from("vendors").select("*").order("vendor_name", { ascending: true });
-  if (error) {
-    alert("업체 불러오기 실패: " + error.message);
-    return;
-  }
+  if (error) throw new Error("업체 불러오기 실패: " + error.message);
   const sel = document.getElementById("purchase_vendor_select");
   sel.innerHTML = '<option value="">업체 선택</option>';
   data.forEach(v => {
@@ -902,10 +875,7 @@ async function purchase_loadRequesterContacts() {
     .eq("is_active", true)
     .order("contact_name", { ascending: true });
 
-  if (error) {
-    alert("발주처 담당자 불러오기 실패: " + error.message);
-    return;
-  }
+  if (error) throw new Error("발주처 담당자 불러오기 실패: " + error.message);
 
   const sel = document.getElementById("purchase_requester_name_select");
   sel.innerHTML = '<option value="">담당자 선택</option>';
@@ -945,10 +915,10 @@ async function purchase_loadVendorMaterials() {
     .eq("id", vendorId)
     .single();
 
-  if (!vendorError && vendorRow) {
-    purchase_currentVendorContactName = vendorRow.vendor_contact_name || "";
-    purchase_currentVendorContactPhone = vendorRow.vendor_contact_phone || "";
-  }
+  if (vendorError) throw new Error("업체 담당자 조회 실패: " + vendorError.message);
+
+  purchase_currentVendorContactName = vendorRow.vendor_contact_name || "";
+  purchase_currentVendorContactPhone = vendorRow.vendor_contact_phone || "";
 
   const { data, error } = await db
     .from("materials")
@@ -956,10 +926,7 @@ async function purchase_loadVendorMaterials() {
     .eq("vendor_id", vendorId)
     .order("item_name", { ascending: true });
 
-  if (error) {
-    alert("자재 불러오기 실패: " + error.message);
-    return;
-  }
+  if (error) throw new Error("자재 불러오기 실패: " + error.message);
 
   data.forEach(row => {
     const tr = document.createElement("tr");
@@ -1051,13 +1018,13 @@ function purchase_validateOrderData(formData) {
 }
 
 async function purchase_saveOrder() {
+  const formData = purchase_getHeaderFormData();
+  if (!purchase_validateOrderData(formData)) return;
+
   if (purchase_loadedMode === "loaded") {
     alert("현재 불러온 발주입니다. 신규 저장이 아니라 수정 저장을 사용하세요.");
     return;
   }
-
-  const formData = purchase_getHeaderFormData();
-  if (!purchase_validateOrderData(formData)) return;
 
   const validItems = purchase_orderItems.filter(x => Number(x.order_qty) > 0);
 
@@ -1255,6 +1222,31 @@ async function purchase_loadOrderDetail(orderId) {
   alert("발주 상세 불러오기 완료");
 }
 
+async function purchase_init() {
+  await purchase_loadVendors();
+  await purchase_loadRequesterContacts();
+  purchase_newOrder();
+  await purchase_loadRecentOrders();
+
+  if (!purchaseEventsBound) {
+    document.getElementById("purchase_vendor_select").addEventListener("change", async () => {
+      await purchase_loadVendorMaterials();
+      purchase_syncHeaderDisplay();
+    });
+    document.getElementById("purchase_requester_name_select").addEventListener("change", purchase_fillRequesterPhoneFromSelect);
+    document.getElementById("purchase_requester_name").addEventListener("input", purchase_syncHeaderDisplay);
+    document.getElementById("purchase_requester_phone").addEventListener("input", purchase_syncHeaderDisplay);
+    document.getElementById("purchase_site_address").addEventListener("input", purchase_syncHeaderDisplay);
+    document.getElementById("purchase_order_date").addEventListener("input", purchase_syncHeaderDisplay);
+    document.getElementById("purchase_arrival_date").addEventListener("input", purchase_syncHeaderDisplay);
+    document.getElementById("purchase_memo").addEventListener("input", purchase_syncHeaderDisplay);
+    purchaseEventsBound = true;
+  }
+
+  purchase_setModeInfo();
+  purchase_syncHeaderDisplay();
+}
+
 /* =========================
    업체/자재 관리
 ========================= */
@@ -1270,10 +1262,7 @@ async function material_loadRequesterList() {
     .eq("is_active", true)
     .order("contact_name", { ascending: true });
 
-  if (error) {
-    alert("발주처 담당자 불러오기 실패: " + error.message);
-    return;
-  }
+  if (error) throw new Error("발주처 담당자 불러오기 실패: " + error.message);
 
   const sel = document.getElementById("material_requester_manage_select");
   sel.innerHTML = '<option value="">담당자 선택</option>';
@@ -1338,7 +1327,7 @@ async function material_saveRequesterContact() {
 
   alert("발주처 담당자 저장 완료");
   await material_loadRequesterList();
-  await purchase_loadRequesterContacts();
+  if (purchaseInitialized) await purchase_loadRequesterContacts();
   material_resetRequesterForm();
 }
 
@@ -1365,17 +1354,14 @@ async function material_updateRequesterContact() {
       alert("수정 대상 조회 실패: " + findError.message);
       return;
     }
-
     if (!foundRows || foundRows.length === 0) {
       alert("수정할 기존 발주처 담당자를 찾지 못했습니다.");
       return;
     }
-
     if (foundRows.length > 1) {
       alert("같은 담당자명이 여러 개 있습니다. 드롭다운에서 먼저 선택하세요.");
       return;
     }
-
     targetId = foundRows[0].id;
   }
 
@@ -1393,7 +1379,7 @@ async function material_updateRequesterContact() {
 
   alert("발주처 담당자 수정 완료");
   await material_loadRequesterList();
-  await purchase_loadRequesterContacts();
+  if (purchaseInitialized) await purchase_loadRequesterContacts();
   document.getElementById("material_requester_manage_select").value = targetId;
   material_selectedRequesterId = targetId;
   await material_loadRequesterToForm();
@@ -1405,24 +1391,28 @@ async function material_loadVendor() {
     .select("*")
     .order("vendor_name", { ascending: true });
 
-  if (error) {
-    alert("업체 불러오기 실패: " + error.message);
-    return;
-  }
+  if (error) throw new Error("업체 불러오기 실패: " + error.message);
 
   const sel1 = document.getElementById("material_vendor_select");
   const sel2 = document.getElementById("material_vendor_manage_select");
-  const purchaseSel = document.getElementById("purchase_vendor_select");
 
   sel1.innerHTML = '<option value="">업체 선택</option>';
   sel2.innerHTML = '<option value="">업체 선택</option>';
-  purchaseSel.innerHTML = '<option value="">업체 선택</option>';
 
   data.forEach(v => {
     sel1.innerHTML += `<option value="${v.id}">${v.vendor_name}</option>`;
     sel2.innerHTML += `<option value="${v.id}">${v.vendor_name}</option>`;
-    purchaseSel.innerHTML += `<option value="${v.id}">${v.vendor_name}</option>`;
   });
+
+  if (purchaseInitialized) {
+    const purchaseSel = document.getElementById("purchase_vendor_select");
+    const currentValue = purchaseSel.value;
+    purchaseSel.innerHTML = '<option value="">업체 선택</option>';
+    data.forEach(v => {
+      purchaseSel.innerHTML += `<option value="${v.id}">${v.vendor_name}</option>`;
+    });
+    if (currentValue) purchaseSel.value = currentValue;
+  }
 }
 
 function material_resetVendorForm() {
@@ -1505,17 +1495,14 @@ async function material_updateVendor() {
       alert("수정 대상 조회 실패: " + findError.message);
       return;
     }
-
     if (!foundRows || foundRows.length === 0) {
       alert("수정할 기존 업체를 찾지 못했습니다.");
       return;
     }
-
     if (foundRows.length > 1) {
       alert("같은 업체명이 여러 개 있습니다. 드롭다운에서 먼저 선택하세요.");
       return;
     }
-
     targetId = foundRows[0].id;
   }
 
@@ -1569,7 +1556,6 @@ async function material_saveMaterial() {
     alert("업체를 선택하세요.");
     return;
   }
-
   if (!item_name) {
     alert("자재명을 입력하세요.");
     return;
@@ -1586,6 +1572,9 @@ async function material_saveMaterial() {
 
   alert("자재 저장 완료");
   await material_loadMaterials();
+  if (purchaseInitialized && document.getElementById("purchase_vendor_select").value === vendor_id) {
+    await purchase_loadVendorMaterials();
+  }
   await material_resetMaterialForm();
 }
 
@@ -1605,7 +1594,6 @@ async function material_updateMaterial() {
     alert("업체를 선택하세요.");
     return;
   }
-
   if (!item_name) {
     alert("자재명을 입력하세요.");
     return;
@@ -1623,6 +1611,9 @@ async function material_updateMaterial() {
 
   alert("자재 수정 완료");
   await material_loadMaterials();
+  if (purchaseInitialized && document.getElementById("purchase_vendor_select").value) {
+    await purchase_loadVendorMaterials();
+  }
 }
 
 function material_selectMaterialRow(r) {
@@ -1667,6 +1658,9 @@ async function material_changeStock() {
 
   alert("재고 반영 완료");
   await material_loadMaterials();
+  if (purchaseInitialized && document.getElementById("purchase_vendor_select").value) {
+    await purchase_loadVendorMaterials();
+  }
 }
 
 async function material_loadMaterials() {
@@ -1675,10 +1669,7 @@ async function material_loadMaterials() {
     .select("*, vendors(vendor_name)")
     .order("created_at", { ascending: false });
 
-  if (error) {
-    alert("목록 불러오기 실패: " + error.message);
-    return;
-  }
+  if (error) throw new Error("목록 불러오기 실패: " + error.message);
 
   const body = document.getElementById("material_body");
   body.innerHTML = "";
@@ -1709,6 +1700,13 @@ async function material_resetMaterialForm() {
   document.getElementById("material_note").value = "";
 }
 
+async function material_init() {
+  await material_loadRequesterList();
+  await material_loadVendor();
+  await material_loadMaterials();
+  await material_resetMaterialForm();
+}
+
 /* =========================
    입고 처리
 ========================= */
@@ -1723,10 +1721,7 @@ async function receipt_loadRecent() {
     .order("created_at", { ascending: false })
     .limit(10);
 
-  if (error) {
-    alert("최근 발주 조회 실패: " + error.message);
-    return;
-  }
+  if (error) throw new Error("최근 발주 조회 실패: " + error.message);
 
   const body = document.getElementById("receipt_orderBody");
   body.innerHTML = "";
@@ -1871,7 +1866,6 @@ async function receipt_process() {
       alert(`자재 연결이 없는 항목입니다: ${r.item_name_snapshot}`);
       return;
     }
-
     if (Number(r.receive_qty) > Number(r.remain_qty)) {
       alert(`잔량 초과 항목이 있습니다: ${r.item_name_snapshot}`);
       return;
@@ -1934,17 +1928,21 @@ async function receipt_process() {
       }]);
 
     if (logError) {
-      alert("입고이력 저장 실패: " + error.message);
+      alert("입고이력 저장 실패: " + logError.message);
       return;
     }
   }
 
   alert("입고 완료");
   await receipt_loadSelected();
-  await material_loadMaterials();
-  if (document.getElementById("purchase_vendor_select").value) {
+  if (materialInitialized) await material_loadMaterials();
+  if (purchaseInitialized && document.getElementById("purchase_vendor_select").value) {
     await purchase_loadVendorMaterials();
   }
+}
+
+async function receipt_init() {
+  await receipt_loadRecent();
 }
 
 /* =========================
@@ -1960,10 +1958,7 @@ async function vendorDelete_loadVendors() {
   if (keyword) query = query.ilike("vendor_name", `%${keyword}%`);
 
   const { data, error } = await query;
-  if (error) {
-    alert("업체 불러오기 실패: " + error.message);
-    return;
-  }
+  if (error) throw new Error("업체 불러오기 실패: " + error.message);
 
   const body = document.getElementById("vendorDelete_vendorBody");
   body.innerHTML = "";
@@ -1996,7 +1991,7 @@ async function vendorDelete_deleteVendor() {
 
   const { error } = await db.from("vendors").delete().eq("id", vendorDelete_selectedVendorId);
   if (error) {
-    alert("업체 삭제 실패: " + error.message + "\\n연결된 자재가 있으면 삭제가 막힐 수 있습니다.");
+    alert("업체 삭제 실패: " + error.message + "\n연결된 자재가 있으면 삭제가 막힐 수 있습니다.");
     return;
   }
 
@@ -2005,7 +2000,12 @@ async function vendorDelete_deleteVendor() {
   vendorDelete_selectedVendorName = "";
   document.getElementById("vendorDelete_selected_vendor_name").value = "";
   await vendorDelete_loadVendors();
-  await material_loadVendor();
+  if (materialInitialized) await material_loadVendor();
+  if (purchaseInitialized) await purchase_loadVendors();
+}
+
+async function vendorDelete_init() {
+  await vendorDelete_loadVendors();
 }
 
 /* =========================
@@ -2027,10 +2027,7 @@ async function requesterDelete_loadContacts() {
   if (keyword) query = query.ilike("contact_name", `%${keyword}%`);
 
   const { data, error } = await query;
-  if (error) {
-    alert("담당자 불러오기 실패: " + error.message);
-    return;
-  }
+  if (error) throw new Error("담당자 불러오기 실패: " + error.message);
 
   const body = document.getElementById("requesterDelete_body");
   body.innerHTML = "";
@@ -2076,47 +2073,13 @@ async function requesterDelete_delete() {
   requesterDelete_selectedName = "";
   document.getElementById("requesterDelete_selected_name").value = "";
   await requesterDelete_loadContacts();
-  await material_loadRequesterList();
-  await purchase_loadRequesterContacts();
+  if (materialInitialized) await material_loadRequesterList();
+  if (purchaseInitialized) await purchase_loadRequesterContacts();
 }
 
-/* =========================
-   초기화
-========================= */
-async function initAll() {
-  await purchase_loadVendors();
-  await purchase_loadRequesterContacts();
-  purchase_newOrder();
-  await purchase_loadRecentOrders();
-
-  await material_loadRequesterList();
-  await material_loadVendor();
-  await material_loadMaterials();
-  await material_resetMaterialForm();
-
-  await receipt_loadRecent();
-  await vendorDelete_loadVendors();
+async function requesterDelete_init() {
   await requesterDelete_loadContacts();
-
-  document.getElementById("purchase_vendor_select").addEventListener("change", async () => {
-    await purchase_loadVendorMaterials();
-    purchase_syncHeaderDisplay();
-  });
-  document.getElementById("purchase_requester_name_select").addEventListener("change", purchase_fillRequesterPhoneFromSelect);
-  document.getElementById("purchase_requester_name").addEventListener("input", purchase_syncHeaderDisplay);
-  document.getElementById("purchase_requester_phone").addEventListener("input", purchase_syncHeaderDisplay);
-  document.getElementById("purchase_site_address").addEventListener("input", purchase_syncHeaderDisplay);
-  document.getElementById("purchase_order_date").addEventListener("input", purchase_syncHeaderDisplay);
-  document.getElementById("purchase_arrival_date").addEventListener("input", purchase_syncHeaderDisplay);
-  document.getElementById("purchase_memo").addEventListener("input", purchase_syncHeaderDisplay);
-
-  purchase_setModeInfo();
-  purchase_syncHeaderDisplay();
 }
-
-window.addEventListener("load", async () => {
-  await checkSessionOnLoad();
-});
 </script>
 
 </body>
