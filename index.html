@@ -252,11 +252,11 @@
 <div id="loginScreen" class="login-wrap">
   <div class="login-card">
     <h2>AK ERP 로그인</h2>
-    <div class="small">Supabase Auth 이메일 / 비밀번호 로그인입니다.</div>
+    <div class="small">이메일 / 비밀번호 로그인</div>
     <input id="loginId" type="email" placeholder="이메일">
     <input id="loginPw" type="password" placeholder="비밀번호">
     <button class="menu-btn" onclick="handleLogin()">로그인</button>
-    <div class="small">로그인 성공 시에만 앱이 열립니다.</div>
+    <div class="small">로그인 성공 시 자동으로 메인 화면으로 이동합니다.</div>
   </div>
 </div>
 
@@ -264,7 +264,7 @@
 <div id="appRoot" class="hidden">
   <div class="app">
     <div class="topbar">
-      <div class="topbar-title">AK디자인 자재관리 ERP </div>
+      <div class="topbar-title">AK디자인 자재관리 ERP</div>
       <button class="muted-btn no-print" style="width:auto;padding:10px 14px;" onclick="logout()">로그아웃</button>
     </div>
 
@@ -660,6 +660,8 @@ const url = "https://gmqjbkqttkkotvvjnsiz.supabase.co";
 const key = "sb_publishable_NGNO5UWtbkgCWQQ6jwTe6Q_4evcuVD9";
 const db = supabase.createClient(url, key);
 
+let appInitialized = false;
+
 /* =========================
    Auth 로그인
 ========================= */
@@ -672,7 +674,7 @@ async function handleLogin() {
     return;
   }
 
-  const { error } = await db.auth.signInWithPassword({
+  const { data, error } = await db.auth.signInWithPassword({
     email,
     password
   });
@@ -680,6 +682,20 @@ async function handleLogin() {
   if (error) {
     alert("로그인 실패: " + error.message);
     return;
+  }
+
+  try {
+    if (data.session) {
+      enterApp();
+
+      if (!appInitialized) {
+        await initAll();
+        appInitialized = true;
+      }
+    }
+  } catch (e) {
+    console.error(e);
+    alert("로그인 후 초기화 중 오류가 발생했습니다: " + e.message);
   }
 }
 
@@ -702,15 +718,18 @@ async function checkSessionOnLoad() {
 
   if (data.session) {
     enterApp();
-    await initAll();
+
+    if (!appInitialized) {
+      await initAll();
+      appInitialized = true;
+    }
   }
 }
-
-let appInitialized = false;
 
 db.auth.onAuthStateChange(async (event, session) => {
   if (event === "SIGNED_IN" && session) {
     enterApp();
+
     if (!appInitialized) {
       await initAll();
       appInitialized = true;
@@ -1886,7 +1905,7 @@ async function receipt_process() {
       }]);
 
     if (logError) {
-      alert("입고이력 저장 실패: " + logError.message);
+      alert("입고이력 저장 실패: " + error.message);
       return;
     }
   }
@@ -2068,10 +2087,6 @@ async function initAll() {
 
 window.addEventListener("load", async () => {
   await checkSessionOnLoad();
-  if (!appInitialized && !document.getElementById("appRoot").classList.contains("hidden")) {
-    await initAll();
-    appInitialized = true;
-  }
 });
 </script>
 
