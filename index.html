@@ -237,12 +237,6 @@
     button { display: none !important; }
   }
 </style>
-<script>
-function autoResize(el) {
-  el.style.height = "auto";
-  el.style.height = el.scrollHeight + "px";
-}
-</script>
 </head>
 <body>
 
@@ -475,7 +469,7 @@ function autoResize(el) {
 
       <div class="card">
         <h3>현장주소 관리</h3>
-        <div class="small">견적 ERP에서 넘어온 주소를 포함해, 이곳의 현장주소 목록을 발주 화면과 현장 관리 보고에서 같이 사용합니다.</div>
+        <div class="small">현장주소를 등록해두면 발주 화면과 현장 관리 보고에서 선택해서 사용할 수 있습니다.</div>
 
         <select id="site_manage_select" onchange="site_loadToForm()">
           <option value="">현장주소 선택</option>
@@ -734,6 +728,13 @@ function autoResize(el) {
 const url = "https://gmqjbkqttkkotvvjnsiz.supabase.co";
 const key = "sb_publishable_NGNO5UWtbkgCWQQ6jwTe6Q_4evcuVD9";
 const db = supabase.createClient(url, key);
+
+
+function autoResize(el) {
+  if (!el) return;
+  el.style.height = "auto";
+  el.style.height = el.scrollHeight + "px";
+}
 
 let appInitialized = false;
 let purchaseInitialized = false;
@@ -996,6 +997,8 @@ async function purchase_loadRequesterContacts() {
 }
 
 async function purchase_loadSiteAddresses() {
+  await syncOrderSitesToSiteAddresses();
+
   const { data, error } = await db
     .from("site_addresses")
     .select("*")
@@ -1838,7 +1841,65 @@ async function material_resetMaterialForm() {
 ========================= */
 let site_selectedId = null;
 
+async function syncOrderSitesToSiteAddresses() {
+  const { data: orderRows, error: orderError } = await db
+    .from("order_sites")
+    .select("site_address")
+    .order("site_address", { ascending: true });
+
+  if (orderError) {
+    console.error("order_sites 불러오기 실패:", orderError);
+    return;
+  }
+
+  const { data: siteRows, error: siteError } = await db
+    .from("site_addresses")
+    .select("id, site_address, is_active");
+
+  if (siteError) {
+    console.error("site_addresses 불러오기 실패:", siteError);
+    return;
+  }
+
+  const existingMap = new Map();
+  (siteRows || []).forEach(row => {
+    const key = String(row.site_address || "").trim();
+    if (!key) return;
+    existingMap.set(key, row);
+  });
+
+  const insertRows = [];
+  (orderRows || []).forEach(row => {
+    const addr = String(row.site_address || "").trim();
+    if (!addr) return;
+
+    // 이미 존재하면 건드리지 않는다.
+    // is_active = false 인 삭제 주소도 다시 살리지 않는다.
+    if (existingMap.has(addr)) return;
+
+    insertRows.push({
+      site_address: addr,
+      note: "견적 확정 주소 자동동기화",
+      is_active: true,
+      updated_at: new Date().toISOString()
+    });
+  });
+
+  if (!insertRows.length) return;
+
+  const { error: insertError } = await db
+    .from("site_addresses")
+    .insert(insertRows);
+
+  if (insertError) {
+    console.error("site_addresses 자동동기화 실패:", insertError);
+  }
+}
+
+
 async function site_loadList() {
+  await syncOrderSitesToSiteAddresses();
+
   const { data, error } = await db
     .from("site_addresses")
     .select("*")
@@ -1899,18 +1960,46 @@ async function site_save() {
     return;
   }
 
-  const { error } = await db
+  const { data: existingRows, error: findError } = await db
     .from("site_addresses")
-    .insert([{
-      site_address,
-      note,
-      is_active: true,
-      updated_at: new Date().toISOString()
-    }]);
+    .select("id, is_active")
+    .eq("site_address", site_address)
+    .limit(1);
 
-  if (error) {
-    alert("현장주소 저장 실패: " + error.message);
+  if (findError) {
+    alert("현장주소 확인 실패: " + findError.message);
     return;
+  }
+
+  if (existingRows && existingRows.length > 0) {
+    const existing = existingRows[0];
+    const { error: updateError } = await db
+      .from("site_addresses")
+      .update({
+        note,
+        is_active: true,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", existing.id);
+
+    if (updateError) {
+      alert("현장주소 저장 실패: " + updateError.message);
+      return;
+    }
+  } else {
+    const { error } = await db
+      .from("site_addresses")
+      .insert([{
+        site_address,
+        note,
+        is_active: true,
+        updated_at: new Date().toISOString()
+      }]);
+
+    if (error) {
+      alert("현장주소 저장 실패: " + error.message);
+      return;
+    }
   }
 
   alert("현장주소 저장 완료");
@@ -1974,7 +2063,10 @@ async function site_delete() {
 
   const { error } = await db
     .from("site_addresses")
-    .delete()
+    .update({
+      is_active: false,
+      updated_at: new Date().toISOString()
+    })
     .eq("id", site_selectedId);
 
   if (error) {
@@ -2007,6 +2099,8 @@ async function material_init() {
 let siteReport_selectedId = null;
 
 async function siteReport_loadSiteOptions() {
+  await syncOrderSitesToSiteAddresses();
+
   const { data, error } = await db
     .from("site_addresses")
     .select("*")
