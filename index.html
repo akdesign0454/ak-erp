@@ -32,16 +32,17 @@
 
     <div id="mainMenu" class="card no-print">
       <h3>메뉴</h3>
-      <div class="menu-grid">
-        <button class="menu-btn" onclick="showScreen('screenSiteReport')">현장 관리 보고</button>
-        <button class="menu-btn" onclick="showScreen('screenPurchase')">발주서 작성</button>
-        <button class="menu-btn" onclick="showScreen('screenMaterial')">업체 / 자재 / 현장 관리</button>
-        <button class="menu-btn" onclick="showScreen('screenReceipt')">입고 처리</button>
+      <div class="menu-grid menu-grid-3">
+        <button class="menu-btn" onclick="showScreen('screenSiteReport')">현장보고서</button>
         <button class="menu-btn" onclick="showScreen('screenCounselLogs')">상담일지</button>
+        <button class="menu-btn" onclick="showScreen('screenPurchase')">발주서작성</button>
+        <button class="menu-btn" onclick="showScreen('screenMaterialManage')">자재관리</button>
+        <button class="menu-btn" onclick="showScreen('screenReceipt')">입고처리</button>
+        <button class="menu-btn" onclick="showScreen('screenVendorManage')">업체관리</button>
       </div>
     </div>
 
-    <section id="screenPurchase" class="screen active">
+    <section id="screenPurchase" class="screen">
       <div class="card no-print">
         <h3>현재 상태</h3>
         <div class="status-box" id="purchase_modeInfo">신규 작성 모드</div>
@@ -156,13 +157,12 @@
         </div>
 
         <div class="no-print" style="margin-top:12px;">
-          <div class="btn-row">
-            <button class="sub-btn" onclick="purchase_newOrder()">신규 저장용 새 발주</button>
-            <button class="menu-btn" onclick="purchase_saveOrder()">신규 저장</button>
-            <button class="sub-btn" onclick="purchase_updateOrder()">수정 저장</button>
+          <div class="btn-row btn-row-4">
+            <button class="sub-btn" onclick="purchase_newOrder()">신규발주</button>
+            <button class="menu-btn" onclick="purchase_saveOrder()">저장</button>
+            <button class="sub-btn" onclick="purchase_updateOrder()">수정</button>
             <button class="muted-btn" onclick="window.print()">PDF 저장</button>
           </div>
-          <button class="sub-btn" onclick="purchase_loadRecentOrders()">최근 발주</button>
         </div>
       </div>
 
@@ -197,29 +197,9 @@
       </div>
     </section>
 
-    <section id="screenMaterial" class="screen">
+    <section id="screenVendorManage" class="screen">
       <div class="card">
-        <h3>발주처 담당자 관리 (AK디자인)</h3>
-        <div class="small">발주처 담당자를 저장해두면 발주서에서 선택 시 전화번호가 자동으로 들어갑니다.</div>
-
-        <select id="material_requester_manage_select" onchange="material_loadRequesterToForm()">
-          <option value="">담당자 선택</option>
-        </select>
-
-        <input id="material_requester_contact_name" placeholder="발주처 담당자명">
-        <input id="material_requester_contact_phone" placeholder="발주처 전화번호">
-
-        <div class="btn-row">
-          <button class="menu-btn" onclick="material_saveRequesterContact()">발주처 담당자 신규 저장</button>
-          <button class="sub-btn" onclick="material_updateRequesterContact()">발주처 담당자 수정 저장</button>
-        </div>
-
-        <button class="muted-btn" onclick="material_resetRequesterForm()">발주처 담당자 입력 초기화</button>
-      </div>
-
-      <div class="card">
-        <h3>업체 관리</h3>
-        <div class="small">기존 업체를 선택하면 수정할 수 있습니다. 선택 없이 수정 저장을 누르면 업체명으로 기존 업체를 찾습니다.</div>
+        <h3>업체관리</h3>
 
         <select id="material_vendor_manage_select" onchange="material_loadVendorToForm()">
           <option value="">업체 선택</option>
@@ -230,35 +210,15 @@
         <input id="material_vendor_contact_phone" placeholder="수신처 전화번호">
 
         <div class="btn-row">
-          <button class="menu-btn" onclick="material_saveVendor()">업체 신규 저장</button>
-          <button class="sub-btn" onclick="material_updateVendor()">업체 수정 저장</button>
+          <button class="menu-btn" onclick="material_saveVendor()">업체 저장</button>
+          <button class="sub-btn" onclick="material_updateVendor()">업체 수정</button>
         </div>
-
-        <button class="muted-btn" onclick="material_resetVendorForm()">업체 입력 초기화</button>
       </div>
+    </section>
 
+    <section id="screenMaterialManage" class="screen">
       <div class="card">
-        <h3>현장주소 관리</h3>
-        <div class="small">견적 ERP에서 넘어온 주소를 포함해, 이곳의 현장주소 목록을 발주 화면과 현장 관리 보고에서 같이 사용합니다.</div>
-
-        <select id="site_manage_select" onchange="site_loadToForm()">
-          <option value="">현장주소 선택</option>
-        </select>
-
-        <input id="site_address_input" placeholder="현장주소">
-        <textarea id="site_note_input" placeholder="비고"></textarea>
-
-        <div class="btn-row">
-          <button class="menu-btn" onclick="site_save()">현장주소 신규 저장</button>
-          <button class="sub-btn" onclick="site_update()">현장주소 수정 저장</button>
-        </div>
-
-        <button class="danger-btn" onclick="site_delete()">현장주소 삭제</button>
-        <button class="muted-btn" onclick="site_resetForm()">현장주소 입력 초기화</button>
-      </div>
-
-      <div class="card">
-        <h3>자재 관리</h3>
+        <h3>자재관리</h3>
         <select id="material_vendor_select">
           <option value="">업체 선택</option>
         </select>
@@ -272,7 +232,7 @@
 
         <div class="btn-row">
           <button class="menu-btn" onclick="material_saveMaterial()">자재 저장</button>
-          <button class="sub-btn" onclick="material_updateMaterial()">자재 수정 저장</button>
+          <button class="sub-btn" onclick="material_updateMaterial()">자재 수정</button>
         </div>
 
         <button class="muted-btn" onclick="material_resetMaterialForm()">자재 신규 입력</button>
@@ -293,7 +253,7 @@
 
       <div class="card">
         <h3>자재 목록</h3>
-        <div class="table-wrap">
+        <div class="table-wrap table-wrap-y material-list-wrap">
           <table style="min-width:760px;">
             <thead>
               <tr>
@@ -311,10 +271,10 @@
       </div>
     </section>
 
-    <section id="screenSiteReport" class="screen">
+    <section id="screenSiteReport" class="screen active">
       <div class="card">
-        <h3>현장 관리 보고</h3>
-        <div class="small">같은 날짜라도 현장주소가 다르면 각각 따로 저장됩니다. 같은 날짜 + 같은 현장은 수정 저장 방식입니다.</div>
+        <h3>현장 보고서</h3>
+        <div class="small">같은 날짜와 같은 현장은 수정 저장으로 관리됩니다.</div>
 
         <input id="site_report_id" type="hidden">
 
@@ -339,8 +299,6 @@
           <button class="menu-btn" onclick="siteReport_save()">저장</button>
           <button class="sub-btn" onclick="siteReport_update()">수정</button>
         </div>
-
-        <button class="muted-btn" onclick="siteReport_resetForm()">새 보고 작성</button>
       </div>
 
       <div class="card">
@@ -438,7 +396,7 @@
     <section id="screenCounselLogs" class="screen">
       <div class="card">
         <h3>상담일지</h3>
-        <div class="small">견적 ERP의 quote_counsel_logs에서 주소와 상담일지를 읽어옵니다. 주소는 자재 ERP의 현장주소 목록에도 자동 동기화됩니다.</div>
+        
         <div class="row no-print">
           <div>
             <label>주소선택</label>
@@ -459,7 +417,7 @@
         <div class="counsel-split">
           <div class="card" style="margin-bottom:0;">
             <h3>주소 목록</h3>
-            <div class="small">견적 ERP에 저장된 상담 주소 기준입니다.</div>
+            
             <div id="counselAddressCount" class="status-box" style="margin-top:8px;">주소를 불러오는 중입니다.</div>
             <div class="table-wrap" style="margin-top:8px; max-height:380px; overflow:auto;">
               <table class="counsel-table">
@@ -508,64 +466,6 @@
       </div>
     </section>
 
-
-    <section id="screenVendorDelete" class="screen">
-      <div class="card">
-        <h3>업체 삭제</h3>
-        <div class="small">삭제할 업체를 선택한 뒤 삭제 버튼을 누르십시오. 연결된 자재가 있으면 삭제가 막힐 수 있습니다.</div>
-        <input id="vendorDelete_search_vendor" placeholder="업체명 검색">
-        <button class="sub-btn" onclick="vendorDelete_loadVendors()">업체 불러오기</button>
-      </div>
-
-      <div class="card">
-        <div class="table-wrap">
-          <table style="min-width:620px;">
-            <thead>
-              <tr>
-                <th>업체명</th>
-                <th>수신처 담당자</th>
-                <th>수신처 전화번호</th>
-              </tr>
-            </thead>
-            <tbody id="vendorDelete_vendorBody"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="card">
-        <input id="vendorDelete_selected_vendor_name" readonly placeholder="선택된 업체">
-        <button class="danger-btn" onclick="vendorDelete_deleteVendor()">선택 업체 삭제</button>
-      </div>
-    </section>
-
-    <section id="screenRequesterDelete" class="screen">
-      <div class="card">
-        <h3>발주처 담당자 삭제</h3>
-        <div class="small">AK디자인 담당자를 선택한 뒤 삭제하십시오.</div>
-        <input id="requesterDelete_search_contact" placeholder="담당자명 검색">
-        <button class="sub-btn" onclick="requesterDelete_loadContacts()">담당자 불러오기</button>
-      </div>
-
-      <div class="card">
-        <div class="table-wrap">
-          <table style="min-width:620px;">
-            <thead>
-              <tr>
-                <th>담당자명</th>
-                <th>전화번호</th>
-                <th>회사명</th>
-              </tr>
-            </thead>
-            <tbody id="requesterDelete_body"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="card">
-        <input id="requesterDelete_selected_name" readonly placeholder="선택된 담당자">
-        <button class="danger-btn" onclick="requesterDelete_delete()">선택 담당자 삭제</button>
-      </div>
-    </section>
   </div>
 </div>
 

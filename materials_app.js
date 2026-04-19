@@ -13,11 +13,10 @@ const estimateDb = supabase.createClient(ESTIMATE_SUPABASE_URL, ESTIMATE_SUPABAS
 
 let appInitialized = false;
 let purchaseInitialized = false;
-let materialInitialized = false;
+let vendorManageInitialized = false;
+let materialManageInitialized = false;
 let siteReportInitialized = false;
 let receiptInitialized = false;
-let vendorDeleteInitialized = false;
-let requesterDeleteInitialized = false;
 let counselConfirmedAddressRows = [];
 let counselFilteredAddressRows = [];
 let counselCurrentRows = [];
@@ -58,7 +57,7 @@ async function handleLogin() {
     enterApp();
     if (!appInitialized) {
       appInitialized = true;
-      await showScreen("screenPurchase");
+      await showScreen("screenSiteReport");
     }
   } else {
     alert("로그인은 되었지만 세션이 확인되지 않습니다.");
@@ -73,11 +72,10 @@ async function logout() {
   }
   appInitialized = false;
   purchaseInitialized = false;
-  materialInitialized = false;
+  vendorManageInitialized = false;
+  materialManageInitialized = false;
   siteReportInitialized = false;
   receiptInitialized = false;
-  vendorDeleteInitialized = false;
-  requesterDeleteInitialized = false;
   leaveApp();
   location.reload();
 }
@@ -92,7 +90,7 @@ window.addEventListener("load", async () => {
     enterApp();
     if (!appInitialized) {
       appInitialized = true;
-      await showScreen("screenPurchase");
+      await showScreen("screenSiteReport");
     }
   }
 });
@@ -143,9 +141,13 @@ async function showScreen(screenId) {
       await purchase_init();
       purchaseInitialized = true;
     }
-    if (screenId === "screenMaterial" && !materialInitialized) {
-      await material_init();
-      materialInitialized = true;
+    if (screenId === "screenVendorManage" && !vendorManageInitialized) {
+      await vendorManage_init();
+      vendorManageInitialized = true;
+    }
+    if (screenId === "screenMaterialManage" && !materialManageInitialized) {
+      await materialManage_init();
+      materialManageInitialized = true;
     }
     if (screenId === "screenSiteReport" && !siteReportInitialized) {
       await siteReport_init();
@@ -154,14 +156,6 @@ async function showScreen(screenId) {
     if (screenId === "screenReceipt" && !receiptInitialized) {
       await receipt_init();
       receiptInitialized = true;
-    }
-    if (screenId === "screenVendorDelete" && !vendorDeleteInitialized) {
-      await vendorDelete_init();
-      vendorDeleteInitialized = true;
-    }
-    if (screenId === "screenRequesterDelete" && !requesterDeleteInitialized) {
-      await requesterDelete_init();
-      requesterDeleteInitialized = true;
     }
     if (screenId === "screenCounselLogs") {
       await counselLogs_refreshAddressList();
@@ -279,7 +273,7 @@ async function purchase_loadRequesterContacts() {
 }
 
 async function purchase_loadSiteAddresses() {
-  await syncEstimateCounselToSiteAddresses();
+  await syncConfirmedEstimateAddressesToSiteDb();
   const { data, error } = await db
     .from("site_addresses")
     .select("*")
@@ -474,7 +468,6 @@ async function purchase_saveOrder() {
   purchase_loadedOrderId = orderData.id;
   purchase_loadedMode = "loaded";
   purchase_setModeInfo();
-  await purchase_loadRecentOrders();
 }
 
 async function purchase_updateOrder() {
@@ -527,22 +520,6 @@ async function purchase_updateOrder() {
   }
 
   alert("수정 저장 완료");
-  await purchase_loadRecentOrders();
-}
-
-async function purchase_loadRecentOrders() {
-  const { data, error } = await db
-    .from("purchase_lists")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(30);
-
-  if (error) {
-    alert("최근 발주 조회 실패: " + error.message);
-    return;
-  }
-
-  purchase_renderSearchOrders(data || []);
 }
 
 async function purchase_searchOrders() {
@@ -553,7 +530,7 @@ async function purchase_searchOrders() {
   let query = db.from("purchase_lists").select("*").order("created_at", { ascending: false }).limit(100);
   if (searchOrderNo) query = query.ilike("order_no", `%${searchOrderNo}%`);
   if (searchVendorName) query = query.ilike("vendor_name", `%${searchVendorName}%`);
-  if (searchSiteName) query = query.ilike("site_name", `%${searchSiteName}%`);
+  if (searchSiteName) query = query.ilike("site_address", `%${searchSiteName}%`);
 
   const { data, error } = await query;
   if (error) {
@@ -573,7 +550,7 @@ function purchase_renderSearchOrders(rows) {
     tr.innerHTML = `
       <td>${row.order_no ?? ""}</td>
       <td>${row.vendor_name ?? ""}</td>
-      <td>${row.site_name ?? ""}</td>
+      <td>${row.site_address ?? row.site_name ?? ""}</td>
       <td>${row.order_date ?? ""}</td>
       <td>${row.arrival_date ?? ""}</td>
     `;
@@ -643,7 +620,6 @@ async function purchase_init() {
   await purchase_loadRequesterContacts();
   await purchase_loadSiteAddresses();
   purchase_newOrder();
-  await purchase_loadRecentOrders();
 
   if (!purchaseEventsBound) {
     document.getElementById("purchase_vendor_select").addEventListener("change", async () => {
@@ -1117,207 +1093,17 @@ async function material_resetMaterialForm() {
   document.getElementById("material_note").value = "";
 }
 
-/* =========================
-   현장주소 관리
-========================= */
-let site_selectedId = null;
-
-async function site_loadList() {
-  await syncEstimateCounselToSiteAddresses();
-  const { data, error } = await db
-    .from("site_addresses")
-    .select("*")
-    .eq("is_active", true)
-    .order("site_address", { ascending: true });
-
-  if (error) {
-    alert("현장주소 목록 불러오기 실패: " + error.message);
-    return;
-  }
-
-  const sel = document.getElementById("site_manage_select");
-  sel.innerHTML = '<option value="">현장주소 선택</option>';
-
-  data.forEach(row => {
-    sel.innerHTML += `<option value="${row.id}">${row.site_address}</option>`;
-  });
+async function vendorManage_init() {
+  await material_loadVendor();
+  material_resetVendorForm();
 }
 
-function site_resetForm() {
-  site_selectedId = null;
-  document.getElementById("site_manage_select").value = "";
-  document.getElementById("site_address_input").value = "";
-  document.getElementById("site_note_input").value = "";
-}
-
-async function site_loadToForm() {
-  const id = document.getElementById("site_manage_select").value;
-  site_selectedId = id || null;
-
-  if (!id) {
-    site_resetForm();
-    return;
-  }
-
-  const { data, error } = await db
-    .from("site_addresses")
-    .select("*")
-    .eq("id", id)
-    .single();
-
-  if (error) {
-    alert("현장주소 조회 실패: " + error.message);
-    return;
-  }
-
-  site_selectedId = data.id;
-  document.getElementById("site_address_input").value = data.site_address || "";
-  document.getElementById("site_note_input").value = data.note || "";
-}
-
-async function site_save() {
-  const site_address = document.getElementById("site_address_input").value.trim();
-  const note = document.getElementById("site_note_input").value.trim();
-
-  if (!site_address) {
-    alert("현장주소를 입력하세요.");
-    return;
-  }
-
-  const normalizedAddress = String(site_address).replace(/\s+/g, " ").trim();
-
-  const { data: existingRows, error: findError } = await db
-    .from("site_addresses")
-    .select("id, site_address, is_active")
-    .eq("site_address", normalizedAddress)
-    .limit(1);
-
-  if (findError) {
-    alert("현장주소 확인 실패: " + findError.message);
-    return;
-  }
-
-  if (existingRows && existingRows.length > 0) {
-    const existing = existingRows[0];
-    const { error: updateError } = await db
-      .from("site_addresses")
-      .update({
-        note,
-        is_active: true,
-        updated_at: new Date().toISOString()
-      })
-      .eq("id", existing.id);
-
-    if (updateError) {
-      alert("현장주소 저장 실패: " + updateError.message);
-      return;
-    }
-  } else {
-    const { error } = await db
-      .from("site_addresses")
-      .insert([{
-        site_address: normalizedAddress,
-        note,
-        is_active: true,
-        updated_at: new Date().toISOString()
-      }]);
-
-    if (error) {
-      alert("현장주소 저장 실패: " + error.message);
-      return;
-    }
-  }
-
-  alert("현장주소 저장 완료");
-  await site_loadList();
-  if (purchaseInitialized) await purchase_loadSiteAddresses();
-  if (siteReportInitialized) await siteReport_loadSiteOptions();
-  site_resetForm();
-}
-
-async function site_update() {
-  if (!site_selectedId) {
-    alert("수정할 현장주소를 먼저 선택하세요.");
-    return;
-  }
-
-  const site_address = document.getElementById("site_address_input").value.trim();
-  const note = document.getElementById("site_note_input").value.trim();
-
-  if (!site_address) {
-    alert("현장주소를 입력하세요.");
-    return;
-  }
-
-  if (!confirm("선택한 현장주소를 수정 저장하시겠습니까?")) return;
-
-  const { error } = await db
-    .from("site_addresses")
-    .update({
-      site_address,
-      note,
-      updated_at: new Date().toISOString()
-    })
-    .eq("id", site_selectedId);
-
-  if (error) {
-    alert("현장주소 수정 실패: " + error.message);
-    return;
-  }
-
-  alert("현장주소 수정 완료");
-  await site_loadList();
-  if (purchaseInitialized) await purchase_loadSiteAddresses();
-  if (siteReportInitialized) await siteReport_loadSiteOptions();
-  document.getElementById("site_manage_select").value = site_selectedId;
-  await site_loadToForm();
-}
-
-async function site_delete() {
-  if (!site_selectedId) {
-    alert("삭제할 현장주소를 먼저 선택하세요.");
-    return;
-  }
-
-  const currentText = document.getElementById("site_address_input").value.trim();
-
-  const ok = confirm(
-    `정말로 아래 현장주소를 삭제하시겠습니까?\n\n${currentText}\n\n연결된 현장관리 보고 내용도 같이 삭제됩니다.\n삭제 후에는 되돌릴 수 없습니다.`
-  );
-
-  if (!ok) return;
-
-  const { error } = await db
-    .from("site_addresses")
-    .update({
-      is_active: false,
-      updated_at: new Date().toISOString()
-    })
-    .eq("id", site_selectedId);
-
-  if (error) {
-    alert("현장주소 삭제 실패: " + error.message);
-    return;
-  }
-
-  alert("현장주소 삭제 완료");
-  await site_loadList();
-  if (purchaseInitialized) await purchase_loadSiteAddresses();
-  if (siteReportInitialized) {
-    await siteReport_loadSiteOptions();
-    await siteReport_search();
-  }
-  site_resetForm();
-}
-
-async function material_init() {
-  await material_loadRequesterList();
+async function materialManage_init() {
   await material_loadVendor();
   await material_loadMaterials();
   await material_resetMaterialForm();
-  await site_loadList();
-  site_resetForm();
 }
+
 
 /* =========================
    현장 관리 보고
@@ -1325,7 +1111,7 @@ async function material_init() {
 let siteReport_selectedId = null;
 
 async function siteReport_loadSiteOptions() {
-  await syncEstimateCounselToSiteAddresses();
+  await syncConfirmedEstimateAddressesToSiteDb();
   const { data, error } = await db
     .from("site_addresses")
     .select("*")
@@ -1351,12 +1137,18 @@ async function siteReport_loadSiteOptions() {
   if (currentSearchText) setSelectByText("site_report_search_site_select", currentSearchText);
 }
 
+function siteReport_defaultContent() {
+  return "오늘 마감보고서 :\n\n내일 진행할 보고서 :";
+}
+
 function siteReport_resetForm() {
   siteReport_selectedId = null;
   document.getElementById("site_report_id").value = "";
   document.getElementById("site_report_date").value = todayString();
   document.getElementById("site_report_site_select").value = "";
-  document.getElementById("site_report_content").value = "";
+  const box = document.getElementById("site_report_content");
+  box.value = siteReport_defaultContent();
+  autoResize(box);
 }
 
 function siteReport_clearSearch() {
@@ -1523,7 +1315,9 @@ function siteReport_loadDetail(row) {
   siteReport_selectedId = row.id;
   document.getElementById("site_report_id").value = row.id;
   document.getElementById("site_report_date").value = row.report_date || "";
-  document.getElementById("site_report_content").value = row.report_content || "";
+  const box = document.getElementById("site_report_content");
+  box.value = row.report_content || siteReport_defaultContent();
+  autoResize(box);
 
   const siteText = row.site_addresses?.site_address || "";
   setSelectByText("site_report_site_select", siteText);
@@ -1763,7 +1557,7 @@ async function receipt_process() {
 
   alert("입고 완료");
   await receipt_loadSelected();
-  if (materialInitialized) await material_loadMaterials();
+  if (materialManageInitialized) await material_loadMaterials();
   if (purchaseInitialized && document.getElementById("purchase_vendor_select").value) {
     await purchase_loadVendorMaterials();
   }
@@ -1772,143 +1566,6 @@ async function receipt_process() {
 async function receipt_init() {
   await receipt_loadRecent();
 }
-
-/* =========================
-   업체 삭제
-========================= */
-let vendorDelete_selectedVendorId = null;
-let vendorDelete_selectedVendorName = "";
-
-async function vendorDelete_loadVendors() {
-  const keyword = document.getElementById("vendorDelete_search_vendor").value.trim();
-
-  let query = db.from("vendors").select("*").order("vendor_name", { ascending: true });
-  if (keyword) query = query.ilike("vendor_name", `%${keyword}%`);
-
-  const { data, error } = await query;
-  if (error) throw new Error("업체 불러오기 실패: " + error.message);
-
-  const body = document.getElementById("vendorDelete_vendorBody");
-  body.innerHTML = "";
-
-  data.forEach(row => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${row.vendor_name ?? ""}</td>
-      <td>${row.vendor_contact_name ?? ""}</td>
-      <td>${row.vendor_contact_phone ?? ""}</td>
-    `;
-    tr.onclick = () => {
-      document.querySelectorAll("#vendorDelete_vendorBody tr").forEach(x => x.classList.remove("selected"));
-      tr.classList.add("selected");
-      vendorDelete_selectedVendorId = row.id;
-      vendorDelete_selectedVendorName = row.vendor_name ?? "";
-      document.getElementById("vendorDelete_selected_vendor_name").value = vendorDelete_selectedVendorName;
-    };
-    body.appendChild(tr);
-  });
-}
-
-async function vendorDelete_deleteVendor() {
-  if (!vendorDelete_selectedVendorId) {
-    alert("먼저 삭제할 업체를 선택하세요.");
-    return;
-  }
-
-  if (!confirm(`정말로 "${vendorDelete_selectedVendorName}" 업체를 삭제하시겠습니까?`)) return;
-
-  const { error } = await db.from("vendors").delete().eq("id", vendorDelete_selectedVendorId);
-  if (error) {
-    alert("업체 삭제 실패: " + error.message + "\n연결된 자재가 있으면 삭제가 막힐 수 있습니다.");
-    return;
-  }
-
-  alert("업체 삭제 완료");
-  vendorDelete_selectedVendorId = null;
-  vendorDelete_selectedVendorName = "";
-  document.getElementById("vendorDelete_selected_vendor_name").value = "";
-  await vendorDelete_loadVendors();
-  if (materialInitialized) await material_loadVendor();
-  if (purchaseInitialized) await purchase_loadVendors();
-}
-
-async function vendorDelete_init() {
-  await vendorDelete_loadVendors();
-}
-
-/* =========================
-   발주처 담당자 삭제
-========================= */
-let requesterDelete_selectedId = null;
-let requesterDelete_selectedName = "";
-
-async function requesterDelete_loadContacts() {
-  const keyword = document.getElementById("requesterDelete_search_contact").value.trim();
-
-  let query = db
-    .from("requester_contacts")
-    .select("*")
-    .eq("company_name", "AK디자인")
-    .eq("is_active", true)
-    .order("contact_name", { ascending: true });
-
-  if (keyword) query = query.ilike("contact_name", `%${keyword}%`);
-
-  const { data, error } = await query;
-  if (error) throw new Error("담당자 불러오기 실패: " + error.message);
-
-  const body = document.getElementById("requesterDelete_body");
-  body.innerHTML = "";
-
-  data.forEach(row => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${row.contact_name ?? ""}</td>
-      <td>${row.contact_phone ?? ""}</td>
-      <td>${row.company_name ?? ""}</td>
-    `;
-    tr.onclick = () => {
-      document.querySelectorAll("#requesterDelete_body tr").forEach(x => x.classList.remove("selected"));
-      tr.classList.add("selected");
-      requesterDelete_selectedId = row.id;
-      requesterDelete_selectedName = row.contact_name ?? "";
-      document.getElementById("requesterDelete_selected_name").value = requesterDelete_selectedName;
-    };
-    body.appendChild(tr);
-  });
-}
-
-async function requesterDelete_delete() {
-  if (!requesterDelete_selectedId) {
-    alert("먼저 삭제할 담당자를 선택하세요.");
-    return;
-  }
-
-  if (!confirm(`정말로 "${requesterDelete_selectedName}" 담당자를 삭제하시겠습니까?`)) return;
-
-  const { error } = await db
-    .from("requester_contacts")
-    .delete()
-    .eq("id", requesterDelete_selectedId);
-
-  if (error) {
-    alert("담당자 삭제 실패: " + error.message);
-    return;
-  }
-
-  alert("담당자 삭제 완료");
-  requesterDelete_selectedId = null;
-  requesterDelete_selectedName = "";
-  document.getElementById("requesterDelete_selected_name").value = "";
-  await requesterDelete_loadContacts();
-  if (materialInitialized) await material_loadRequesterList();
-  if (purchaseInitialized) await purchase_loadRequesterContacts();
-}
-
-async function requesterDelete_init() {
-  await requesterDelete_loadContacts();
-}
-
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -1919,52 +1576,115 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
-async function syncEstimateCounselToSiteAddresses() {
+
+
+async function fetchConfirmedQuoteAddressRows() {
+  const { data, error } = await estimateDb
+    .from("quotes")
+    .select(`
+      id,
+      quote_no,
+      quote_status,
+      site_id,
+      sites (
+        id,
+        site_address,
+        customer_id,
+        customers (
+          id,
+          customer_name,
+          phone
+        )
+      )
+    `)
+    .eq("quote_status", "확정견적")
+    .limit(5000);
+
+  if (error) throw error;
+
+  const map = new Map();
+
+  (data || []).forEach(row => {
+    const siteRow = row?.sites;
+    const address = counselLogs_normalizeAddress(siteRow?.site_address);
+    if (!siteRow || !address) return;
+
+    if (!map.has(address)) {
+      map.set(address, {
+        quote_id: row.id,
+        quote_no: row.quote_no || "",
+        quote_status: row.quote_status || "",
+        site_id: siteRow.id,
+        site_address: address,
+        customer_name: siteRow?.customers?.customer_name || "",
+        phone: siteRow?.customers?.phone || ""
+      });
+    }
+  });
+
+  return Array.from(map.values()).sort((a, b) => a.site_address.localeCompare(b.site_address, "ko"));
+}
+
+async function syncConfirmedEstimateAddressesToSiteDb() {
   try {
-    const { data: estimateRows, error: estimateError } = await estimateDb
-      .from("quote_counsel_logs")
-      .select("site_address")
-      .not("site_address", "is", null);
-
-    if (estimateError) throw estimateError;
-
-    const uniqueAddresses = [...new Set((estimateRows || [])
-      .map(row => String(row.site_address || "").replace(/\s+/g, " ").trim())
-      .filter(Boolean))];
-
-    if (!uniqueAddresses.length) return;
+    const confirmedRows = await fetchConfirmedQuoteAddressRows();
+    const confirmedAddresses = confirmedRows.map(row => counselLogs_normalizeAddress(row.site_address)).filter(Boolean);
+    const confirmedSet = new Set(confirmedAddresses);
 
     const { data: siteRows, error: siteError } = await db
       .from("site_addresses")
-      .select("id, site_address, is_active");
+      .select("id, site_address, is_active")
+      .order("site_address", { ascending: true });
 
     if (siteError) throw siteError;
 
     const existingMap = new Map();
     (siteRows || []).forEach(row => {
-      const key = String(row.site_address || "").replace(/\s+/g, " ").trim();
+      const key = counselLogs_normalizeAddress(row.site_address);
       if (key) existingMap.set(key, row);
     });
 
     const insertRows = [];
-    for (const addr of uniqueAddresses) {
-      if (existingMap.has(addr)) continue;
-      insertRows.push({
-        site_address: addr,
-        note: "견적 ERP 상담주소 자동동기화",
-        is_active: true,
-        updated_at: new Date().toISOString()
-      });
+    for (const row of confirmedRows) {
+      const key = counselLogs_normalizeAddress(row.site_address);
+      const existing = existingMap.get(key);
+      if (!existing) {
+        insertRows.push({
+          site_address: row.site_address,
+          note: "견적 ERP 확정견적 주소 동기화",
+          is_active: true,
+          updated_at: new Date().toISOString()
+        });
+      }
     }
 
     if (insertRows.length) {
       const { error: insertError } = await db.from("site_addresses").insert(insertRows);
       if (insertError) throw insertError;
     }
+
+    for (const row of (siteRows || [])) {
+      const key = counselLogs_normalizeAddress(row.site_address);
+      const nextActive = confirmedSet.has(key);
+      if (row.is_active !== nextActive) {
+        const { error: updateError } = await db
+          .from("site_addresses")
+          .update({
+            is_active: nextActive,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", row.id);
+        if (updateError) throw updateError;
+      }
+    }
+
+    return confirmedAddresses;
   } catch (err) {
-    console.error("상담주소 동기화 실패:", err);
+    console.error("확정견적 주소 동기화 실패:", err);
+    return [];
   }
 }
+
 
 function counselLogs_pickDate(row) {
   return String(
@@ -1997,26 +1717,15 @@ function counselLogs_normalizeAddress(addr) {
   return String(addr || "").replace(/\s+/g, " ").trim();
 }
 
+
 async function counselLogs_fetchConfirmedAddresses() {
-  const { data, error } = await estimateDb
-    .from("quote_counsel_logs")
-    .select("site_address")
-    .not("site_address", "is", null);
-
-  if (error) {
-    console.error("상담주소 조회 실패", error);
-    throw error;
-  }
-
-  const unique = [...new Set((data || [])
-    .map(v => counselLogs_normalizeAddress(v.site_address))
-    .filter(Boolean))];
-
-  return unique.sort((a, b) => a.localeCompare(b, "ko")).map(addr => ({
-    site_address: addr,
+  const rows = await fetchConfirmedQuoteAddressRows();
+  return rows.map(row => ({
+    site_address: row.site_address,
     site_name: ""
   }));
 }
+
 
 function counselLogs_renderAddressOptions(rows) {
   const select = document.getElementById("counselAddressSelect");
@@ -2069,8 +1778,7 @@ function counselLogs_filterAddressOptions() {
 
 async function counselLogs_refreshAddressList() {
   try {
-    await syncEstimateCounselToSiteAddresses();
-    counselConfirmedAddressRows = await counselLogs_fetchConfirmedAddresses();
+      counselConfirmedAddressRows = await counselLogs_fetchConfirmedAddresses();
     counselFilteredAddressRows = [...counselConfirmedAddressRows];
     counselLogs_renderAddressOptions(counselFilteredAddressRows);
     const status = document.getElementById("counselLogsStatus");

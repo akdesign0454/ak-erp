@@ -237,3 +237,30 @@
 .counsel-split { display:grid; grid-template-columns: 0.95fr 1.45fr; gap: 12px; }
 #counselAddressBody tr.selected, #counselLogsBody tr.selected { background:#dbeafe !important; }
 @media (max-width: 768px){ .counsel-split { grid-template-columns: 1fr !important; } }
+
+
+.menu-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.btn-row-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.table-wrap-y {
+  overflow-y: auto;
+}
+.material-list-wrap {
+  max-height: 420px;
+}
+@media (max-width: 1024px) {
+  .menu-grid-3 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 768px) {
+  .btn-row-4 {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  .material-list-wrap {
+    max-height: 320px;
+  }
+}
