@@ -176,6 +176,7 @@ let purchase_loadedMode = "new";
 let purchase_currentVendorContactName = "";
 let purchase_currentVendorContactPhone = "";
 let purchaseEventsBound = false;
+let purchase_vendorMaterials = [];
 
 function purchase_setModeInfo() {
   const box = document.getElementById("purchase_modeInfo");
@@ -307,6 +308,7 @@ function purchase_fillRequesterPhoneFromSelect() {
   purchase_syncHeaderDisplay();
 }
 
+
 async function purchase_loadVendorMaterials() {
   const vendorId = document.getElementById("purchase_vendor_select").value;
   const body = document.getElementById("purchase_materialBody");
@@ -314,9 +316,13 @@ async function purchase_loadVendorMaterials() {
 
   purchase_currentVendorContactName = "";
   purchase_currentVendorContactPhone = "";
+  purchase_vendorMaterials = [];
   purchase_syncHeaderDisplay();
 
-  if (!vendorId) return;
+  if (!vendorId) {
+    purchase_renderVendorMaterials();
+    return;
+  }
 
   const { data: vendorRow, error: vendorError } = await db
     .from("vendors")
@@ -337,7 +343,32 @@ async function purchase_loadVendorMaterials() {
 
   if (error) throw new Error("자재 불러오기 실패: " + error.message);
 
-  data.forEach(row => {
+  purchase_vendorMaterials = data || [];
+  purchase_renderVendorMaterials();
+  purchase_syncHeaderDisplay();
+}
+
+function purchase_renderVendorMaterials() {
+  const body = document.getElementById("purchase_materialBody");
+  const cards = document.getElementById("purchase_materialCards");
+  const keyword = (document.getElementById("purchase_material_keyword")?.value || "").trim().toLowerCase();
+
+  body.innerHTML = "";
+  if (cards) cards.innerHTML = "";
+
+  const rows = purchase_vendorMaterials.filter(row => {
+    if (!keyword) return true;
+    return String(row.item_name || "").toLowerCase().includes(keyword) ||
+      String(row.spec || "").toLowerCase().includes(keyword) ||
+      String(row.unit || "").toLowerCase().includes(keyword);
+  });
+
+  if (!rows.length) {
+    if (cards) cards.innerHTML = '<div class="empty-mobile">표시할 자재가 없습니다.</div>';
+    return;
+  }
+
+  rows.forEach(row => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${row.item_name ?? ""}</td>
@@ -346,11 +377,22 @@ async function purchase_loadVendorMaterials() {
     `;
     tr.onclick = () => purchase_addOrderItem(row);
     body.appendChild(tr);
+
+    if (cards) {
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "mobile-list-card";
+      card.innerHTML = `
+        <div class="mobile-list-title">${row.item_name ?? ""}</div>
+        <div class="mobile-list-meta">단위: ${row.unit ?? "-"} · 현재고: ${row.stock_qty ?? 0}</div>
+        <div class="mobile-list-sub">${row.spec ?? ""}</div>
+        <div class="mobile-list-action">눌러서 발주항목 추가</div>
+      `;
+      card.onclick = () => purchase_addOrderItem(row);
+      cards.appendChild(card);
+    }
   });
-
-  purchase_syncHeaderDisplay();
 }
-
 function purchase_addOrderItem(row) {
   const foundIndex = purchase_orderItems.findIndex(x => x.material_id === row.id);
   if (foundIndex >= 0) {
@@ -376,9 +418,16 @@ function purchase_updateQty(index, value) {
   purchase_orderItems[index].order_qty = qty < 0 ? 0 : qty;
 }
 
+
 function purchase_renderOrderItems() {
   const body = document.getElementById("purchase_orderItemBody");
+  const cards = document.getElementById("purchase_orderItemCards");
   body.innerHTML = "";
+  if (cards) cards.innerHTML = "";
+
+  if (!purchase_orderItems.length && cards) {
+    cards.innerHTML = '<div class="empty-mobile">추가된 발주 항목이 없습니다.</div>';
+  }
 
   purchase_orderItems.forEach((row, index) => {
     const tr = document.createElement("tr");
@@ -394,9 +443,24 @@ function purchase_renderOrderItems() {
       </td>
     `;
     body.appendChild(tr);
+
+    if (cards) {
+      const wrap = document.createElement("div");
+      wrap.className = "mobile-form-card";
+      wrap.innerHTML = `
+        <div class="mobile-list-title">${row.item_name_snapshot ?? ""}</div>
+        <div class="mobile-list-meta">단위: ${row.unit_snapshot ?? "-"}</div>
+        <div class="mobile-qty-row">
+          <label>수량</label>
+          <input class="table-input" type="number" min="0" value="${row.order_qty ?? 0}"
+            oninput="purchase_updateQty(${index}, this.value)">
+        </div>
+        <button type="button" class="danger-btn" onclick="purchase_removeOrderItem(${index})">항목 삭제</button>
+      `;
+      cards.appendChild(wrap);
+    }
   });
 }
-
 function purchase_getHeaderFormData() {
   const vendorSelect = document.getElementById("purchase_vendor_select");
   return {
@@ -541,24 +605,45 @@ async function purchase_searchOrders() {
   purchase_renderSearchOrders(data || []);
 }
 
+
 function purchase_renderSearchOrders(rows) {
   const body = document.getElementById("purchase_orderSearchBody");
+  const cards = document.getElementById("purchase_orderSearchCards");
   body.innerHTML = "";
+  if (cards) cards.innerHTML = "";
+
+  if (!rows.length && cards) {
+    cards.innerHTML = '<div class="empty-mobile">조회 결과가 없습니다.</div>';
+  }
 
   rows.forEach(row => {
+    const siteText = row.site_address ?? row.site_name ?? "";
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${row.order_no ?? ""}</td>
       <td>${row.vendor_name ?? ""}</td>
-      <td>${row.site_address ?? row.site_name ?? ""}</td>
+      <td>${siteText}</td>
       <td>${row.order_date ?? ""}</td>
       <td>${row.arrival_date ?? ""}</td>
     `;
     tr.onclick = () => purchase_loadOrderDetail(row.id);
     body.appendChild(tr);
+
+    if (cards) {
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "mobile-list-card";
+      card.innerHTML = `
+        <div class="mobile-list-title">${row.order_no ?? ""}</div>
+        <div class="mobile-list-meta">${row.vendor_name ?? ""}</div>
+        <div class="mobile-list-sub">${siteText}</div>
+        <div class="mobile-list-meta">발주일 ${row.order_date ?? "-"} · 도착일 ${row.arrival_date ?? "-"}</div>
+      `;
+      card.onclick = () => purchase_loadOrderDetail(row.id);
+      cards.appendChild(card);
+    }
   });
 }
-
 async function purchase_loadOrderDetail(orderId) {
   const { data: header, error: headerError } = await db
     .from("purchase_lists")
@@ -629,6 +714,7 @@ async function purchase_init() {
     document.getElementById("purchase_requester_name_select").addEventListener("change", purchase_fillRequesterPhoneFromSelect);
     document.getElementById("purchase_requester_name").addEventListener("input", purchase_syncHeaderDisplay);
     document.getElementById("purchase_requester_phone").addEventListener("input", purchase_syncHeaderDisplay);
+    document.getElementById("purchase_material_keyword")?.addEventListener("input", purchase_renderVendorMaterials);
     document.getElementById("purchase_site_address_select").addEventListener("change", purchase_syncHeaderDisplay);
     document.getElementById("purchase_order_date").addEventListener("input", purchase_syncHeaderDisplay);
     document.getElementById("purchase_arrival_date").addEventListener("input", purchase_syncHeaderDisplay);
@@ -1056,6 +1142,7 @@ async function material_changeStock() {
   }
 }
 
+
 async function material_loadMaterials() {
   const { data, error } = await db
     .from("materials")
@@ -1065,9 +1152,15 @@ async function material_loadMaterials() {
   if (error) throw new Error("목록 불러오기 실패: " + error.message);
 
   const body = document.getElementById("material_body");
+  const cards = document.getElementById("material_cards");
   body.innerHTML = "";
+  if (cards) cards.innerHTML = "";
 
-  data.forEach(r => {
+  if (!(data || []).length && cards) {
+    cards.innerHTML = '<div class="empty-mobile">자재가 없습니다.</div>';
+  }
+
+  (data || []).forEach(r => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${r.vendors?.vendor_name || ""}</td>
@@ -1079,9 +1172,22 @@ async function material_loadMaterials() {
     `;
     tr.onclick = () => material_selectMaterialRow(r);
     body.appendChild(tr);
+
+    if (cards) {
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "mobile-list-card";
+      card.innerHTML = `
+        <div class="mobile-list-title">${r.item_name || ""}</div>
+        <div class="mobile-list-meta">${r.vendors?.vendor_name || ""} · ${r.item_code || ""}</div>
+        <div class="mobile-list-sub">${r.spec || ""}</div>
+        <div class="mobile-list-meta">단위 ${r.unit || "-"} · 재고 ${r.stock_qty || 0}</div>
+      `;
+      card.onclick = () => material_selectMaterialRow(r);
+      cards.appendChild(card);
+    }
   });
 }
-
 async function material_resetMaterialForm() {
   material_selectedMaterial = null;
   document.getElementById("material_vendor_select").value = "";
@@ -1276,6 +1382,7 @@ async function siteReport_update() {
   await siteReport_search();
 }
 
+
 async function siteReport_search() {
   const searchDate = document.getElementById("site_report_search_date").value;
   const searchSiteId = document.getElementById("site_report_search_site_select").value;
@@ -1297,20 +1404,40 @@ async function siteReport_search() {
   }
 
   const body = document.getElementById("site_report_body");
+  const cards = document.getElementById("site_report_cards");
   body.innerHTML = "";
+  if (cards) cards.innerHTML = "";
 
-  data.forEach(row => {
+  if (!(data || []).length && cards) {
+    cards.innerHTML = '<div class="empty-mobile">조회된 보고서가 없습니다.</div>';
+  }
+
+  (data || []).forEach(row => {
+    const address = row.site_addresses?.site_address ?? "";
+    const contentHtml = (row.report_content ?? "").replace(/\n/g, "<br>");
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${row.report_date ?? ""}</td>
-      <td>${row.site_addresses?.site_address ?? ""}</td>
-      <td style="white-space:normal;min-width:300px;">${(row.report_content ?? "").replace(/\n/g, "<br>")}</td>
+      <td>${address}</td>
+      <td style="white-space:normal;min-width:300px;">${contentHtml}</td>
     `;
     tr.onclick = () => siteReport_loadDetail(row);
     body.appendChild(tr);
+
+    if (cards) {
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "mobile-list-card text-left";
+      card.innerHTML = `
+        <div class="mobile-list-title">${row.report_date ?? ""}</div>
+        <div class="mobile-list-meta">${address}</div>
+        <div class="mobile-list-sub mobile-memo-preview">${contentHtml}</div>
+      `;
+      card.onclick = () => siteReport_loadDetail(row);
+      cards.appendChild(card);
+    }
   });
 }
-
 function siteReport_loadDetail(row) {
   siteReport_selectedId = row.id;
   document.getElementById("site_report_id").value = row.id;
@@ -1336,6 +1463,7 @@ let receipt_selectedId = null;
 let receipt_selectedHeader = null;
 let receipt_items = [];
 
+
 async function receipt_loadRecent() {
   const { data, error } = await db
     .from("purchase_lists")
@@ -1346,25 +1474,47 @@ async function receipt_loadRecent() {
   if (error) throw new Error("최근 발주 조회 실패: " + error.message);
 
   const body = document.getElementById("receipt_orderBody");
+  const cards = document.getElementById("receipt_orderCards");
   body.innerHTML = "";
+  if (cards) cards.innerHTML = "";
 
-  data.forEach(r => {
+  (data || []).forEach(r => {
+    const selectRow = () => {
+      document.querySelectorAll("#receipt_orderBody tr").forEach(x => x.classList.remove("selected"));
+      document.querySelectorAll("#receipt_orderCards .mobile-list-card").forEach(x => x.classList.remove("selected"));
+      receipt_selectedId = r.id;
+      receipt_selectedHeader = r;
+      tr.classList.add("selected");
+      card?.classList.add("selected");
+    };
+
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${r.order_no ?? ""}</td>
       <td>${r.vendor_name ?? ""}</td>
       <td>${r.order_date ?? ""}</td>
     `;
-    tr.onclick = () => {
-      document.querySelectorAll("#receipt_orderBody tr").forEach(x => x.classList.remove("selected"));
-      tr.classList.add("selected");
-      receipt_selectedId = r.id;
-      receipt_selectedHeader = r;
-    };
+    tr.onclick = selectRow;
     body.appendChild(tr);
-  });
-}
 
+    let card = null;
+    if (cards) {
+      card = document.createElement("button");
+      card.type = "button";
+      card.className = "mobile-list-card";
+      card.innerHTML = `
+        <div class="mobile-list-title">${r.order_no ?? ""}</div>
+        <div class="mobile-list-meta">${r.vendor_name ?? ""}</div>
+        <div class="mobile-list-sub">${r.site_address ?? ""}</div>
+        <div class="mobile-list-meta">발주일 ${r.order_date ?? ""}</div>
+      `;
+      card.onclick = selectRow;
+      cards.appendChild(card);
+    }
+  });
+
+  if (!(data || []).length && cards) cards.innerHTML = '<div class="empty-mobile">최근 발주가 없습니다.</div>';
+}
 async function receipt_loadSelected() {
   if (!receipt_selectedId) {
     alert("발주를 먼저 선택하세요.");
@@ -1422,9 +1572,16 @@ async function receipt_loadSelected() {
   receipt_render();
 }
 
+
 function receipt_render() {
   const body = document.getElementById("receipt_itemBody");
+  const cards = document.getElementById("receipt_itemCards");
   body.innerHTML = "";
+  if (cards) cards.innerHTML = "";
+
+  if (!receipt_items.length && cards) {
+    cards.innerHTML = '<div class="empty-mobile">입고 항목이 없습니다.</div>';
+  }
 
   receipt_items.forEach((r, i) => {
     const statusText = r.receipt_done ? "입고완료" : "입고대기";
@@ -1448,9 +1605,28 @@ function receipt_render() {
         <td class="${statusClass}">${statusText}</td>
       </tr>
     `;
+
+    if (cards) {
+      const wrap = document.createElement("div");
+      wrap.className = "mobile-form-card";
+      wrap.innerHTML = `
+        <div class="mobile-list-title">${r.item_name_snapshot}</div>
+        <div class="mobile-list-meta">발주 ${r.order_qty} · 누적입고 ${r.receipt_qty} · 잔량 ${r.remain_qty}</div>
+        <div class="mobile-list-meta">현재고 ${r.current_stock} · 상태 <span class="${statusClass}">${statusText}</span></div>
+        <div class="mobile-qty-row">
+          <label>이번 입고수량</label>
+          <input class="table-input" type="number"
+                 min="0"
+                 max="${r.remain_qty}"
+                 value="${r.receive_qty || 0}"
+                 ${r.receipt_done ? "disabled" : ""}
+                 onchange="receipt_setReceiveQty(${i}, this.value)">
+        </div>
+      `;
+      cards.appendChild(wrap);
+    }
   });
 }
-
 function receipt_setReceiveQty(index, value) {
   const qty = Number(value || 0);
   const remain = Number(receipt_items[index].remain_qty || 0);
@@ -1727,15 +1903,18 @@ async function counselLogs_fetchConfirmedAddresses() {
 }
 
 
+
 function counselLogs_renderAddressOptions(rows) {
   const select = document.getElementById("counselAddressSelect");
   const body = document.getElementById("counselAddressBody");
+  const cards = document.getElementById("counselAddressCards");
   const count = document.getElementById("counselAddressCount");
   if (!select || !body || !count) return;
 
   const selected = select.value || "";
   select.innerHTML = '<option value="">주소를 선택하세요</option>';
   body.innerHTML = "";
+  if (cards) cards.innerHTML = "";
 
   rows.forEach((row) => {
     const opt = document.createElement("option");
@@ -1743,13 +1922,28 @@ function counselLogs_renderAddressOptions(rows) {
     opt.textContent = row.site_address || "";
     select.appendChild(opt);
 
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${escapeHtml(row.site_address || "")}</td>`;
-    tr.onclick = () => {
+    const choose = () => {
       select.value = row.site_address || "";
       counselLogs_onAddressChange();
     };
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${escapeHtml(row.site_address || "")}</td>`;
+    tr.onclick = choose;
     body.appendChild(tr);
+
+    if (cards) {
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "mobile-list-card";
+      card.dataset.address = row.site_address || "";
+      card.innerHTML = `
+        <div class="mobile-list-title">${escapeHtml(row.site_address || "")}</div>
+        <div class="mobile-list-action">눌러서 상담일지 조회</div>
+      `;
+      card.onclick = choose;
+      cards.appendChild(card);
+    }
   });
 
   count.textContent = `상담주소 ${rows.length}건`;
@@ -1759,12 +1953,14 @@ function counselLogs_renderAddressOptions(rows) {
   }
   counselLogs_highlightSelectedAddress();
 }
-
 function counselLogs_highlightSelectedAddress() {
   const selected = document.getElementById("counselAddressSelect")?.value || "";
   document.querySelectorAll("#counselAddressBody tr").forEach((tr) => {
     const text = tr.children?.[0]?.textContent || "";
     tr.classList.toggle("selected", !!selected && text === selected);
+  });
+  document.querySelectorAll("#counselAddressCards .mobile-list-card").forEach((card) => {
+    card.classList.toggle("selected", !!selected && card.dataset.address === selected);
   });
 }
 
@@ -1793,12 +1989,15 @@ async function counselLogs_refreshAddressList() {
   }
 }
 
+
 async function counselLogs_searchByAddress(address) {
   const body = document.getElementById("counselLogsBody");
+  const cards = document.getElementById("counselLogsCards");
   const status = document.getElementById("counselLogsStatus");
   if (!body || !status) return;
 
   body.innerHTML = "";
+  if (cards) cards.innerHTML = "";
   counselCurrentRows = [];
   counselLogs_setDetail({});
 
@@ -1830,10 +2029,19 @@ async function counselLogs_searchByAddress(address) {
 
     if (!rows.length) {
       status.textContent = "선택한 주소의 상담일지가 없습니다.";
+      if (cards) cards.innerHTML = '<div class="empty-mobile">상담일지가 없습니다.</div>';
       return;
     }
 
     rows.forEach((row, index) => {
+      const pick = () => {
+        document.querySelectorAll("#counselLogsBody tr").forEach(x => x.classList.remove("selected"));
+        document.querySelectorAll("#counselLogsCards .mobile-list-card").forEach(x => x.classList.remove("selected"));
+        tr.classList.add("selected");
+        card?.classList.add("selected");
+        counselLogs_setDetail(row);
+      };
+
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${escapeHtml(counselLogs_pickDate(row))}</td>
@@ -1842,13 +2050,25 @@ async function counselLogs_searchByAddress(address) {
         <td>${escapeHtml(row.site_name || "")}</td>
         <td style="white-space:normal;min-width:260px;">${escapeHtml(counselLogs_pickMemo(row)).replace(/\n/g, "<br>")}</td>
       `;
-      tr.onclick = () => {
-        document.querySelectorAll("#counselLogsBody tr").forEach(x => x.classList.remove("selected"));
-        tr.classList.add("selected");
-        counselLogs_setDetail(row);
-      };
+      tr.onclick = pick;
+
+      let card = null;
+      if (cards) {
+        card = document.createElement("button");
+        card.type = "button";
+        card.className = "mobile-list-card text-left";
+        card.innerHTML = `
+          <div class="mobile-list-title">${escapeHtml(counselLogs_pickDate(row))} · ${escapeHtml(row.customer_name || "")}</div>
+          <div class="mobile-list-meta">${escapeHtml(counselLogs_pickPhone(row))} ${row.site_name ? "· " + escapeHtml(row.site_name) : ""}</div>
+          <div class="mobile-list-sub mobile-memo-preview">${escapeHtml(counselLogs_pickMemo(row)).replace(/\n/g, "<br>")}</div>
+        `;
+        card.onclick = pick;
+        cards.appendChild(card);
+      }
+
       if (index === 0) {
         tr.classList.add("selected");
+        if (card) card.classList.add("selected");
         counselLogs_setDetail(row);
       }
       body.appendChild(tr);
@@ -1859,7 +2079,6 @@ async function counselLogs_searchByAddress(address) {
     status.textContent = "상담일지 조회 오류: " + err.message;
   }
 }
-
 function counselLogs_onAddressChange() {
   counselLogs_highlightSelectedAddress();
   const address = document.getElementById("counselAddressSelect")?.value || "";

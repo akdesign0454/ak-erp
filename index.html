@@ -125,7 +125,8 @@
         <h3>업체 자재 목록</h3>
         <div class="small">업체 선택 시 해당 업체 자재만 표시됩니다. 자재 행을 누르면 발주목록에 추가됩니다.</div>
 
-        <div class="table-wrap">
+        <input id="purchase_material_keyword" class="mobile-search no-print" placeholder="자재명 검색">
+        <div class="table-wrap desktop-table">
           <table style="min-width:520px;">
             <thead>
               <tr>
@@ -137,12 +138,13 @@
             <tbody id="purchase_materialBody"></tbody>
           </table>
         </div>
+        <div id="purchase_materialCards" class="mobile-card-list"></div>
       </div>
 
       <div class="card">
         <h3>발주 항목</h3>
 
-        <div class="table-wrap">
+        <div class="table-wrap desktop-table">
           <table style="min-width:520px;">
             <thead>
               <tr>
@@ -155,6 +157,7 @@
             <tbody id="purchase_orderItemBody"></tbody>
           </table>
         </div>
+        <div id="purchase_orderItemCards" class="mobile-card-list"></div>
 
         <div class="no-print" style="margin-top:12px;">
           <div class="btn-row btn-row-4">
@@ -180,7 +183,7 @@
           <button class="muted-btn" onclick="purchase_clearSearchInputs()">검색칸 지우기</button>
         </div>
 
-        <div class="table-wrap">
+        <div class="table-wrap desktop-table">
           <table style="min-width:700px;">
             <thead>
               <tr>
@@ -194,6 +197,7 @@
             <tbody id="purchase_orderSearchBody"></tbody>
           </table>
         </div>
+        <div id="purchase_orderSearchCards" class="mobile-card-list"></div>
       </div>
     </section>
 
@@ -253,7 +257,7 @@
 
       <div class="card">
         <h3>자재 목록</h3>
-        <div class="table-wrap table-wrap-y material-list-wrap">
+        <div class="table-wrap table-wrap-y material-list-wrap desktop-table">
           <table style="min-width:760px;">
             <thead>
               <tr>
@@ -268,6 +272,7 @@
             <tbody id="material_body"></tbody>
           </table>
         </div>
+        <div id="material_cards" class="mobile-card-list"></div>
       </div>
     </section>
 
@@ -320,7 +325,7 @@
           <button class="muted-btn" onclick="siteReport_clearSearch()">검색 초기화</button>
         </div>
 
-        <div class="table-wrap">
+        <div class="table-wrap desktop-table">
           <table style="min-width:900px;">
             <thead>
               <tr>
@@ -332,6 +337,7 @@
             <tbody id="site_report_body"></tbody>
           </table>
         </div>
+        <div id="site_report_cards" class="mobile-card-list"></div>
       </div>
     </section>
 
@@ -343,7 +349,7 @@
       </div>
 
       <div class="card">
-        <div class="table-wrap">
+        <div class="table-wrap desktop-table">
           <table style="min-width:620px;">
             <thead>
               <tr>
@@ -355,6 +361,7 @@
             <tbody id="receipt_orderBody"></tbody>
           </table>
         </div>
+        <div id="receipt_orderCards" class="mobile-card-list"></div>
         <button class="sub-btn" onclick="receipt_loadSelected()">선택 발주 조회</button>
       </div>
 
@@ -369,7 +376,7 @@
       <div class="card">
         <h3>입고 항목</h3>
         <div class="small">잔량보다 많이 입력하면 막습니다. 완료된 항목은 잠깁니다.</div>
-        <div class="table-wrap">
+        <div class="table-wrap desktop-table">
           <table style="min-width:860px;">
             <thead>
               <tr>
@@ -385,6 +392,7 @@
             <tbody id="receipt_itemBody"></tbody>
           </table>
         </div>
+        <div id="receipt_itemCards" class="mobile-card-list"></div>
       </div>
 
       <div class="card">
@@ -419,7 +427,7 @@
             <h3>주소 목록</h3>
             
             <div id="counselAddressCount" class="status-box" style="margin-top:8px;">주소를 불러오는 중입니다.</div>
-            <div class="table-wrap" style="margin-top:8px; max-height:380px; overflow:auto;">
+            <div class="table-wrap desktop-table" style="margin-top:8px; max-height:380px; overflow:auto;">
               <table class="counsel-table">
                 <thead>
                   <tr><th>현장주소</th></tr>
@@ -427,13 +435,14 @@
                 <tbody id="counselAddressBody"></tbody>
               </table>
             </div>
+            <div id="counselAddressCards" class="mobile-card-list"></div>
           </div>
 
           <div class="card" style="margin-bottom:0;">
             <h3>날짜별 상담일지</h3>
             <div class="small">선택한 주소의 상담일지를 최신 날짜순으로 표시합니다.</div>
             <div id="counselLogsStatus" class="status-box" style="margin-top:8px;">주소를 선택하세요.</div>
-            <div class="table-wrap" style="margin-top:8px; max-height:380px; overflow:auto;">
+            <div class="table-wrap desktop-table" style="margin-top:8px; max-height:380px; overflow:auto;">
               <table class="counsel-table">
                 <thead>
                   <tr>
@@ -447,6 +456,7 @@
                 <tbody id="counselLogsBody"></tbody>
               </table>
             </div>
+            <div id="counselLogsCards" class="mobile-card-list"></div>
           </div>
         </div>
 
