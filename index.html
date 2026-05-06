@@ -2,11 +2,16 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, viewport-fit=cover, user-scalable=no" />
+<meta name="theme-color" content="#2563eb" />
 <title>AK디자인 자재관리 ERP</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="stylesheet" href="materials_style.css">
-
+<script src="https://developers.kakao.com/sdk/js/kakao.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<link rel="stylesheet" href="css/base/materials_style.css">
+<link rel="stylesheet" href="css/mobile/app-shell.css">
+<link rel="stylesheet" href="css/modules/report-paging.css">
 </head>
 <body>
 
@@ -67,8 +72,29 @@
           </div>
         </div>
 
-        <div class="row no-print">
-          <select id="purchase_site_address_select"></select>
+        <div class="no-print">
+          <input id="purchase_site_address_input" placeholder="현장명을 선택하세요" readonly>
+          <input id="purchase_site_address_select" type="hidden">
+          <div class="address-picker-grid">
+            <div class="card picker-card" style="margin-top:8px;">
+              <h3>진행현장 검색</h3>
+              <input id="purchase_progress_keyword" class="site-search-input" placeholder="진행현장 현장명 또는 주소 검색" oninput="purchase_filterProgressSites()">
+              <div class="table-wrap table-wrap-y site-pick-list progress-list-compact">
+                <table class="counsel-table">
+                  <tbody id="purchase_progress_site_body"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="card picker-card" style="margin-top:8px;">
+              <h3>마감현장 검색</h3>
+              <input id="purchase_closed_keyword" class="site-search-input" placeholder="마감현장 현장명 또는 주소 검색" oninput="purchase_filterClosedSites()">
+              <div class="table-wrap table-wrap-y site-pick-list closed-list-compact">
+                <table class="counsel-table">
+                  <tbody id="purchase_closed_site_body"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="row no-print">
@@ -125,8 +151,7 @@
         <h3>업체 자재 목록</h3>
         <div class="small">업체 선택 시 해당 업체 자재만 표시됩니다. 자재 행을 누르면 발주목록에 추가됩니다.</div>
 
-        <input id="purchase_material_keyword" class="mobile-search no-print" placeholder="자재명 검색">
-        <div class="table-wrap desktop-table">
+        <div class="table-wrap">
           <table style="min-width:520px;">
             <thead>
               <tr>
@@ -138,13 +163,12 @@
             <tbody id="purchase_materialBody"></tbody>
           </table>
         </div>
-        <div id="purchase_materialCards" class="mobile-card-list"></div>
       </div>
 
       <div class="card">
         <h3>발주 항목</h3>
 
-        <div class="table-wrap desktop-table">
+        <div class="table-wrap">
           <table style="min-width:520px;">
             <thead>
               <tr>
@@ -157,14 +181,12 @@
             <tbody id="purchase_orderItemBody"></tbody>
           </table>
         </div>
-        <div id="purchase_orderItemCards" class="mobile-card-list"></div>
 
         <div class="no-print" style="margin-top:12px;">
-          <div class="btn-row btn-row-4">
+          <div class="btn-row btn-row-order-main">
             <button class="sub-btn" onclick="purchase_newOrder()">신규발주</button>
-            <button class="menu-btn" onclick="purchase_saveOrder()">저장</button>
-            <button class="sub-btn" onclick="purchase_updateOrder()">수정</button>
-            <button class="muted-btn" onclick="window.print()">PDF 저장</button>
+            <button class="sub-btn" onclick="openOrderPdfListModal()">PDF 목록</button>
+            <button class="kakao-btn order-preview-btn" onclick="openOrderPreviewModal()">발주서 미리보기&amp;발송</button>
           </div>
         </div>
       </div>
@@ -183,7 +205,7 @@
           <button class="muted-btn" onclick="purchase_clearSearchInputs()">검색칸 지우기</button>
         </div>
 
-        <div class="table-wrap desktop-table">
+        <div class="table-wrap">
           <table style="min-width:700px;">
             <thead>
               <tr>
@@ -197,7 +219,6 @@
             <tbody id="purchase_orderSearchBody"></tbody>
           </table>
         </div>
-        <div id="purchase_orderSearchCards" class="mobile-card-list"></div>
       </div>
     </section>
 
@@ -216,6 +237,22 @@
         <div class="btn-row">
           <button class="menu-btn" onclick="material_saveVendor()">업체 저장</button>
           <button class="sub-btn" onclick="material_updateVendor()">업체 수정</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>발주처 담당자 관리</h3>
+
+        <select id="material_requester_manage_select" onchange="material_loadRequesterToForm()">
+          <option value="">담당자 선택</option>
+        </select>
+
+        <input id="material_requester_contact_name" placeholder="담당자명">
+        <input id="material_requester_contact_phone" placeholder="전화번호">
+
+        <div class="btn-row">
+          <button class="menu-btn" onclick="material_saveRequesterContact()">담당자 저장</button>
+          <button class="sub-btn" onclick="material_updateRequesterContact()">담당자 수정</button>
         </div>
       </div>
     </section>
@@ -257,7 +294,7 @@
 
       <div class="card">
         <h3>자재 목록</h3>
-        <div class="table-wrap table-wrap-y material-list-wrap desktop-table">
+        <div class="table-wrap table-wrap-y material-list-wrap">
           <table style="min-width:760px;">
             <thead>
               <tr>
@@ -272,11 +309,28 @@
             <tbody id="material_body"></tbody>
           </table>
         </div>
-        <div id="material_cards" class="mobile-card-list"></div>
       </div>
     </section>
 
-    <section id="screenSiteReport" class="screen active">
+    <section id="screenSiteManage" class="screen hidden">
+      <div class="card">
+        <h3>현장관리</h3>
+
+        <select id="site_manage_select" onchange="site_loadToForm()">
+          <option value="">현장주소 선택</option>
+        </select>
+
+        <input id="site_address_input" placeholder="현장주소">
+        <textarea id="site_note_input" placeholder="비고"></textarea>
+
+        <div class="btn-row">
+          <button class="sub-btn" onclick="site_update()">현장수정</button>
+          <button class="danger-btn" onclick="site_delete()">현장삭제</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="screenSiteReport" class="screen">
       <div class="card">
         <h3>현장 보고서</h3>
         <div class="small">같은 날짜와 같은 현장은 수정 저장으로 관리됩니다.</div>
@@ -289,8 +343,31 @@
             <input id="site_report_date" type="date">
           </div>
           <div>
-            <label>현장주소</label>
-            <select id="site_report_site_select"></select>
+            <label>선택 현장주소</label>
+            <input id="site_report_site_display" readonly placeholder="아래에서 진행현장 또는 마감현장을 선택하세요">
+            <input id="site_report_site_select" type="hidden">
+            <input id="site_report_site_type" type="hidden">
+          </div>
+        </div>
+
+        <div class="address-picker-grid no-print">
+          <div class="card picker-card" style="margin-top:8px;">
+            <h3>진행현장 검색</h3>
+            <input id="site_report_progress_keyword" placeholder="진행현장 현장명 또는 주소 검색" oninput="siteReport_filterProgressSites()">
+            <div class="table-wrap table-wrap-y site-pick-list">
+              <table class="counsel-table">
+                <tbody id="site_report_progress_body"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card picker-card" style="margin-top:8px;">
+            <h3>마감현장 검색</h3>
+            <input id="site_report_closed_keyword" placeholder="마감현장 현장명 또는 주소 검색" oninput="siteReport_filterClosedSites()">
+            <div class="table-wrap table-wrap-y site-pick-list">
+              <table class="counsel-table">
+                <tbody id="site_report_closed_body"></tbody>
+              </table>
+            </div>
           </div>
         </div>
 
@@ -316,7 +393,7 @@
           </div>
           <div>
             <label>현장 검색</label>
-            <select id="site_report_search_site_select"></select>
+            <input id="site_report_search_site_select" placeholder="현장주소 일부 검색">
           </div>
         </div>
 
@@ -325,7 +402,7 @@
           <button class="muted-btn" onclick="siteReport_clearSearch()">검색 초기화</button>
         </div>
 
-        <div class="table-wrap desktop-table">
+        <div class="table-wrap">
           <table style="min-width:900px;">
             <thead>
               <tr>
@@ -337,7 +414,6 @@
             <tbody id="site_report_body"></tbody>
           </table>
         </div>
-        <div id="site_report_cards" class="mobile-card-list"></div>
       </div>
     </section>
 
@@ -349,7 +425,7 @@
       </div>
 
       <div class="card">
-        <div class="table-wrap desktop-table">
+        <div class="table-wrap">
           <table style="min-width:620px;">
             <thead>
               <tr>
@@ -361,7 +437,6 @@
             <tbody id="receipt_orderBody"></tbody>
           </table>
         </div>
-        <div id="receipt_orderCards" class="mobile-card-list"></div>
         <button class="sub-btn" onclick="receipt_loadSelected()">선택 발주 조회</button>
       </div>
 
@@ -376,7 +451,7 @@
       <div class="card">
         <h3>입고 항목</h3>
         <div class="small">잔량보다 많이 입력하면 막습니다. 완료된 항목은 잠깁니다.</div>
-        <div class="table-wrap desktop-table">
+        <div class="table-wrap">
           <table style="min-width:860px;">
             <thead>
               <tr>
@@ -392,7 +467,6 @@
             <tbody id="receipt_itemBody"></tbody>
           </table>
         </div>
-        <div id="receipt_itemCards" class="mobile-card-list"></div>
       </div>
 
       <div class="card">
@@ -401,62 +475,58 @@
     </section>
 
 
-    <section id="screenCounselLogs" class="screen">
+    <section id="screenCounselLogs" class="screen active">
       <div class="card">
         <h3>상담일지</h3>
         
-        <div class="row no-print">
-          <div>
-            <label>주소선택</label>
-            <select id="counselAddressSelect" onchange="counselLogs_onAddressChange()">
-              <option value="">주소를 선택하세요</option>
-            </select>
-          </div>
-          <div>
-            <label>주소검색</label>
-            <input id="counselAddressKeyword" placeholder="주소 일부 검색" oninput="counselLogs_filterAddressOptions()">
-          </div>
-        </div>
-        <div class="btn-row no-print">
-          <button class="menu-btn" onclick="counselLogs_refreshAddressList()">상담주소 불러오기</button>
-          <button class="muted-btn" onclick="counselLogs_clear()">선택 초기화</button>
-        </div>
-
         <div class="counsel-split">
           <div class="card" style="margin-bottom:0;">
-            <h3>주소 목록</h3>
-            
-            <div id="counselAddressCount" class="status-box" style="margin-top:8px;">주소를 불러오는 중입니다.</div>
-            <div class="table-wrap desktop-table" style="margin-top:8px; max-height:380px; overflow:auto;">
+            <h3>진행현장 검색</h3>
+            <input id="counsel_progress_keyword" class="site-search-input" placeholder="진행현장 현장명 또는 주소 검색" oninput="counselLogs_filterProgressSites()">
+            <div id="counselProgressCount" class="status-box" style="margin-top:8px;">주소를 불러오는 중입니다.</div>
+            <div class="table-wrap table-wrap-y progress-list-compact" style="margin-top:8px;">
               <table class="counsel-table">
                 <thead>
-                  <tr><th>현장주소</th></tr>
+                  <tr><th>진행현장 주소</th></tr>
                 </thead>
-                <tbody id="counselAddressBody"></tbody>
+                <tbody id="counselProgressBody"></tbody>
               </table>
             </div>
-            <div id="counselAddressCards" class="mobile-card-list"></div>
           </div>
+          <div class="card" style="margin-bottom:0;">
+            <h3>마감현장 검색</h3>
+            <input id="counsel_closed_keyword" class="site-search-input" placeholder="마감현장 현장명 또는 주소 검색" oninput="counselLogs_filterClosedSites()">
+            <div id="counselClosedCount" class="status-box" style="margin-top:8px;">주소를 불러오는 중입니다.</div>
+            <div class="table-wrap table-wrap-y closed-list-compact" style="margin-top:8px;">
+              <table class="counsel-table">
+                <thead>
+                  <tr><th>마감현장 주소</th></tr>
+                </thead>
+                <tbody id="counselClosedBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px;">
 
           <div class="card" style="margin-bottom:0;">
             <h3>날짜별 상담일지</h3>
             <div class="small">선택한 주소의 상담일지를 최신 날짜순으로 표시합니다.</div>
-            <div id="counselLogsStatus" class="status-box" style="margin-top:8px;">주소를 선택하세요.</div>
-            <div class="table-wrap desktop-table" style="margin-top:8px; max-height:380px; overflow:auto;">
+            <div id="counselLogsStatus" class="status-box" style="margin-top:8px;">현장을 선택하세요.</div>
+            <div class="table-wrap" style="margin-top:8px; max-height:380px; overflow:auto;">
               <table class="counsel-table">
                 <thead>
                   <tr>
                     <th>상담일자</th>
                     <th>성함</th>
-                    <th>전화번호</th>
-                    <th>현장명</th>
+                    <th>현장주소</th>
                     <th>상담내용</th>
                   </tr>
                 </thead>
                 <tbody id="counselLogsBody"></tbody>
               </table>
             </div>
-            <div id="counselLogsCards" class="mobile-card-list"></div>
           </div>
         </div>
 
@@ -478,15 +548,81 @@
 
   </div>
 </div>
-<div id="footer-container"></div>
 
-<script>
-fetch('/footer.html')
-  .then(res => res.text())
-  .then(data => {
-    document.getElementById('footer-container').innerHTML = data;
-  });
-</script>
-<script src="materials_app.js"></script>
+
+<div id="orderPreviewModal" class="order-preview-modal hidden no-print">
+  <div class="order-preview-modal-backdrop" onclick="closeOrderPreviewModal()"></div>
+  <div class="order-preview-modal-panel">
+    <div class="order-preview-modal-head">
+      <h3>발주서 미리보기</h3>
+      <button type="button" class="muted-btn" onclick="closeOrderPreviewModal()">닫기</button>
+    </div>
+    <div class="small">최종 확인 후 저장 & 카톡 공유를 누르면 발주 DB 저장, PDF 저장, 카카오 공유가 순서대로 진행됩니다.</div>
+    <div id="orderPreviewStatus" class="status-box" style="margin-top:8px;">미리보기를 준비하세요.</div>
+    <div class="order-preview-frame-wrap">
+      <img id="orderPreviewImg" alt="발주서 미리보기" style="width:100%;display:none;border:none;">
+    </div>
+    <div class="order-preview-actions">
+      <button type="button" class="muted-btn" onclick="closeOrderPreviewModal()">닫기</button>
+      <button type="button" class="kakao-btn" onclick="orderKakaoShareFromPreview()">저장 & 카톡 공유</button>
+    </div>
+  </div>
+</div>
+
+<div id="orderPdfModal" class="order-pdf-modal hidden no-print">
+  <div class="order-pdf-modal-backdrop" onclick="closeOrderPdfListModal()"></div>
+  <div class="order-pdf-modal-panel">
+    <div class="order-pdf-modal-head">
+      <h3>발주서 PDF 목록</h3>
+      <button type="button" class="muted-btn" onclick="closeOrderPdfListModal()">닫기</button>
+    </div>
+    <div class="small">Storage 저장 PDF를 DB 목록으로 조회합니다. 오래된 파일은 삭제해서 공간을 확보하세요.</div>
+    <div class="row3" style="margin-top:10px;">
+      <input id="orderPdfListOrderNo" placeholder="발주번호 검색">
+      <input id="orderPdfListVendor" placeholder="업체명 검색">
+      <input id="orderPdfListSite" placeholder="현장명 검색">
+    </div>
+    <div class="btn-row">
+      <button class="menu-btn" onclick="loadOrderPdfList()">조회</button>
+      <button class="muted-btn" onclick="clearOrderPdfListSearch()">검색 초기화</button>
+    </div>
+    <div id="orderPdfListStatus" class="status-box" style="margin-top:8px;">PDF 목록을 조회하세요.</div>
+    <div class="table-wrap" style="margin-top:8px; max-height:55vh; overflow:auto;">
+      <table style="min-width:760px;">
+        <thead>
+          <tr>
+            <th>저장일</th>
+            <th>발주번호</th>
+            <th>업체</th>
+            <th>현장</th>
+            <th>용량</th>
+            <th>작업</th>
+          </tr>
+        </thead>
+        <tbody id="orderPdfListBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<script src="js/core/config.js"></script>
+<script src="js/core/app-only-guard.js"></script>
+<script src="js/mobile/push-router.js"></script>
+<script src="js/mobile/push.js"></script>
+<script src="js/core/app-core.js"></script>
+<script src="js/modules/shared-site-data.js"></script>
+<script src="js/modules/purchase.js"></script>
+<script src="js/modules/materials.js"></script>
+<script src="js/modules/sites.js"></script>
+<script src="js/modules/site-reports.js"></script>
+<script src="js/modules/receipt.js"></script>
+<script src="js/modules/counsel-logs.js"></script>
+<script src="js/modules/order/order-pdf.js"></script>
+<script src="js/modules/order/order-preview.js"></script>
+<script src="js/modules/order/order-storage.js"></script>
+<script src="js/modules/order/order-files.js"></script>
+<script src="js/modules/order/order-kakao.js"></script>
+<script src="js/mobile/app-shell.js"></script>
+<script src="js/ui/report-paging.js"></script>
+
 </body>
 </html>
